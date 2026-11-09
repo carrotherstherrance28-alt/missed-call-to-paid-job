@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Price list · Lou</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,560;9..144,680&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip" href="#price-form">Skip to the price list</a>
+  <header class="top">
+    <a class="brand" href="/">
+      <svg class="mark" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="10" fill="#17241f"/><path d="M8 24c4-9 8-9 10-9s6 0 10 9" fill="none" stroke="#e7a15a" stroke-width="2.4" stroke-linecap="round"/><circle cx="18" cy="13" r="2" fill="#e7a15a"/></svg>
+      <span><span class="brand-name">Lou</span><span class="brand-sub">Receptionist</span></span>
+    </a>
+    <nav class="nav">
+      <a href="/">Chat</a>
+      <a href="/dashboard">Jobs</a>
+      <a href="/settings" aria-current="page">Price list</a>
+    </nav>
+  </header>
+  <!--MODE_BANNER-->
+  <main class="wrap narrow">
+    <p class="eyebrow">What Lou is allowed to quote</p>
+    <h1>Price list</h1>
+    <p class="lede">Lou can quote only these lines. If a job is not listed, Lou says so instead of inventing a price. The deposit is this percent of the job total, computed by the server when the PayPal order is created.</p>
+    <form id="price-form" class="panel stack">
+      <div id="form-error" class="form-error" hidden></div>
+      <div class="form-grid">
+        <label>Shop name <input name="name" required maxlength="80"></label>
+        <label>City <input name="city" required maxlength="80"></label>
+        <label>Shop phone <input name="phone" required maxlength="30"></label>
+        <label>Shop email <input name="email" type="email" maxlength="80"></label>
+        <label class="span-2">Service area <input name="serviceArea" required maxlength="120"></label>
+        <label>Deposit percent <input name="depositPercent" type="number" min="1" max="100" step="1" required></label>
+      </div>
+      <div id="items" class="stack"></div>
+      <div class="row-actions">
+        <button class="button ghost" id="add-item" type="button">Add a line</button>
+        <button class="button" type="submit">Save price list</button>
+        <button class="danger" id="reset" type="button">Restore demo prices</button>
+      </div>
+      <p id="saved" class="fine" role="status"></p>
+    </form>
+  </main>
+  <footer class="site-foot">
+    <p>Gateway Mobile Welding is a made-up shop. Lou uses web chat only and does not text or call anyone. Payments stay on the PayPal sandbox, or the offline mock when no keys are set. Requested times are not a calendar sync.</p>
+    <p>MIT License · Therrance Carrothers · Thurr Solutions LLC · St. Louis</p>
+  </footer>
+  <script type="module" src="/settings.js"></script>
+</body>
+</html>

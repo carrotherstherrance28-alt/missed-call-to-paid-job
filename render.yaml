@@ -1,0 +1,32 @@
+# Render blueprint for Lou. Apply from the Render dashboard (New → Blueprint).
+# Then set the secret env vars Render prompts for. MOCK_MODE is false so a
+# deploy never pretends the offline mock is the PayPal sandbox.
+services:
+  - type: web
+    name: lou-receptionist
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: MOCK_MODE
+        value: "false"
+      - key: LLM_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai
+      - key: LLM_MODEL
+        value: gemini-2.5-flash
+      - key: PAYPAL_API_BASE
+        value: https://api-m.sandbox.paypal.com
+      - key: PAYPAL_CLIENT_ID
+        value: AS3g5d5XK4A0-FMYUVpU_-_M_mDJpHHP9vTG6AcWMPf2u0-a0QSd0vbNDtnvL-_tL8BWr5va91Xgn4uP
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
