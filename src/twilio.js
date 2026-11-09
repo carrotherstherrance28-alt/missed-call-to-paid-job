@@ -1,11 +1,9 @@
 import { createHmac, timingSafeEqual, randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
 import { phoneDigits } from "./people.js";
-
-const rangesFile = new URL("../config/quote-ranges.json", import.meta.url);
+import quoteRanges from "../config/quote-ranges.json" with { type: "json" };
 
 export function loadQuoteRanges() {
-  const parsed = JSON.parse(readFileSync(rangesFile, "utf8"));
+  const parsed = quoteRanges;
   if (!Array.isArray(parsed.ranges) || parsed.ranges.length === 0) {
     throw new Error("config/quote-ranges.json needs a ranges array.");
   }

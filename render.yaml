@@ -17,7 +17,7 @@ services:
       - key: LLM_BASE_URL
         value: https://generativelanguage.googleapis.com/v1beta/openai/
       - key: LLM_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3.5-flash
       - key: PAYPAL_API_BASE
         value: https://api-m.sandbox.paypal.com
       - key: PAYPAL_CLIENT_ID

@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import express from "express";
-import { fileURLToPath } from "node:url";
 import { buildSystemPrompt, runAgentTurn, stageFor, suggestionsFromMessages } from "./agent.js";
 import { describeMode, requestBase } from "./config.js";
 import { defaultPriceList } from "./defaultPriceList.js";
@@ -26,8 +25,9 @@ import {
   renderMockCheckout,
   renderReturnPage,
 } from "./pages.js";
+import { publicFiles } from "./publicFiles.js";
 
-const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
+const publicDir = process.env.PUBLIC_DIR || path.join(process.cwd(), "public");
 
 function displayMessages(conversation, job) {
   const out = [];
@@ -48,8 +48,8 @@ function sendPage(res, fileName, config) {
   const phone = config.twilio.live
     ? ""
     : bannerMarkup("Phone and SMS are simulated on the shop board until TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER are set.");
-  const html = fs
-    .readFileSync(path.join(publicDir, fileName), "utf8")
+  const fromBundle = publicFiles[fileName];
+  const html = (fromBundle != null ? fromBundle : fs.readFileSync(path.join(publicDir, fileName), "utf8"))
     .replace("<!--MODE_BANNER-->", bannerMarkup(mode.banner) + phone);
   res.type("html").send(html);
 }
@@ -100,8 +100,40 @@ export function createApp(config) {
   const app = express();
   app.set("trust proxy", 1);
   app.disable("x-powered-by");
-  app.use(express.json({ limit: "100kb" }));
-  app.use(express.urlencoded({ extended: false }));
+  // Lightweight JSON body parser (avoids body-parser/iconv-lite, which break on Workers).
+  app.use(async (req, res, next) => {
+    if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return next();
+    const contentType = String(req.headers["content-type"] || "");
+    if (!contentType.includes("application/json") && !contentType.includes("application/x-www-form-urlencoded")) {
+      return next();
+    }
+    try {
+      const chunks = [];
+      let size = 0;
+      const limit = 100 * 1024;
+      for await (const chunk of req) {
+        size += chunk.length;
+        if (size > limit) {
+          res.status(413).json({ error: "Payload too large." });
+          return;
+        }
+        chunks.push(chunk);
+      }
+      const raw = Buffer.concat(chunks).toString("utf8");
+      if (!raw) {
+        req.body = {};
+        return next();
+      }
+      if (contentType.includes("application/json")) {
+        req.body = JSON.parse(raw);
+      } else {
+        req.body = Object.fromEntries(new URLSearchParams(raw));
+      }
+      next();
+    } catch (err) {
+      res.status(400).json({ error: "Invalid request body." });
+    }
+  });
   app.use((req, res, next) => {
     seeded.then(() => next()).catch(next);
   });
@@ -578,7 +610,27 @@ export function createApp(config) {
   app.get("/", (_req, res) => sendPage(res, "index.html", config));
   app.get("/dashboard", (_req, res) => sendPage(res, "dashboard.html", config));
   app.get("/settings", (_req, res) => sendPage(res, "settings.html", config));
-  app.use(express.static(publicDir, { index: false }));
+  app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") return next();
+    const rel = String(req.path || "/").replace(/^\/+/, "");
+    if (!rel || rel.includes("..")) return next();
+    const body = publicFiles[rel];
+    if (body == null) {
+      try {
+        const full = path.join(publicDir, rel);
+        if (!full.startsWith(publicDir)) return next();
+        if (!fs.existsSync(full) || !fs.statSync(full).isFile()) return next();
+        return res.sendFile(full);
+      } catch {
+        return next();
+      }
+    }
+    if (rel.endsWith(".css")) res.type("css");
+    else if (rel.endsWith(".js")) res.type("js");
+    else if (rel.endsWith(".svg")) res.type("svg");
+    else if (rel.endsWith(".html")) res.type("html");
+    res.send(body);
+  });
 
   app.use((err, req, res, _next) => {
     const status = err.status && Number.isInteger(err.status) ? err.status : 500;

@@ -66,7 +66,7 @@ test("the chat shows a busy retry message when the model returns 429", async () 
         MOCK_MODE: "false",
         LLM_API_KEY: "test-key",
         LLM_BASE_URL: `http://127.0.0.1:${server.address().port}`,
-        LLM_MODEL: "gemini-2.5-flash",
+        LLM_MODEL: "gemini-3.5-flash",
         PAYPAL_CLIENT_ID: "id",
         PAYPAL_CLIENT_SECRET: "secret",
         PAYPAL_API_BASE: "http://127.0.0.1:9",

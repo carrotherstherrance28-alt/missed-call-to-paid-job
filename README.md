@@ -1,4 +1,4 @@
-[DEMO_URL]
+https://lou-receptionist.thurrenterprise.workers.dev
 
 # Lou
 
@@ -82,7 +82,7 @@ A tool call can try to sneak in `price: 1` next to a real item id. The create-or
 |---|---|
 | PayPal Orders v2 sandbox | OAuth, create order, get order, capture. Return URL and shop-board refresh update status without a webhook. |
 | `@paypal/agent-toolkit` `create_order`, `get_order`, and `pay_order` | On the real sandbox host, the server calls these tools with the list price, the return URL, and the cancel URL. The model never receives these tools, so it cannot set `itemCost`. |
-| OpenAI-compatible chat completions | Default is Gemini `gemini-2.5-flash` at `https://generativelanguage.googleapis.com/v1beta/openai/`. Lou uses tool calls: `get_price_list`, `list_open_slots`, `save_followup`, `create_job_and_deposit`. |
+| OpenAI-compatible chat completions | Default is Gemini `gemini-3.5-flash` at `https://generativelanguage.googleapis.com/v1beta/openai/`. Lou uses tool calls: `get_price_list`, `list_open_slots`, `save_followup`, `create_job_and_deposit`. |
 | Render | `render.yaml` is a free web service blueprint. |
 
 I did not add a balance invoice. The deposit order is the payment in this demo.
@@ -129,7 +129,7 @@ The demo works without a webhook. `/pay/return` captures the order. **Refresh pa
 
 ## How the AI is used
 
-Lou calls `POST {LLM_BASE_URL}/chat/completions` with tools. The default base URL is `https://generativelanguage.googleapis.com/v1beta/openai/` and the default model is `gemini-2.5-flash`.
+Lou calls `POST {LLM_BASE_URL}/chat/completions` with tools. The default base URL is `https://generativelanguage.googleapis.com/v1beta/openai/` and the default model is `gemini-3.5-flash`.
 
 For that Gemini host, Lou omits `tool_choice`, strips `additionalProperties` from tool schemas, and sends back each tool call's `extra_content` (the thought signature) on the next request. A `429` waits once, using `Retry-After` when it is short, then tells the customer to send the message again.
 
@@ -161,7 +161,7 @@ npm test
 MOCK_MODE=false
 LLM_API_KEY=your-gemini-key
 LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
-LLM_MODEL=gemini-2.5-flash
+LLM_MODEL=gemini-3.5-flash
 PAYPAL_API_BASE=https://api-m.sandbox.paypal.com
 PAYPAL_CLIENT_ID=your-sandbox-app-id
 PAYPAL_CLIENT_SECRET=your-sandbox-secret
@@ -199,7 +199,7 @@ To receive webhooks, register `https://YOUR_SERVICE/api/paypal/webhook` on the s
 | `DATA_FILE` | JSON store path. Default `./data/lou.json`. |
 | `LLM_BASE_URL` | OpenAI-compatible origin. Default `https://generativelanguage.googleapis.com/v1beta/openai/`. |
 | `LLM_API_KEY` | Bearer token. Secret. |
-| `LLM_MODEL` | Default `gemini-2.5-flash`. |
+| `LLM_MODEL` | Default `gemini-3.5-flash`. |
 | `PAYPAL_API_BASE` | Default `https://api-m.sandbox.paypal.com`. |
 | `PAYPAL_CLIENT_ID` | Sandbox app id (public identifier). |
 | `PAYPAL_CLIENT_SECRET` | Sandbox secret. Never commit it. |

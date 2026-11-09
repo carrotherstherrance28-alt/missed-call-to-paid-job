@@ -1,6 +1,6 @@
 const DEFAULT_LLM_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/";
 const DEFAULT_PAYPAL_BASE = "https://api-m.sandbox.paypal.com";
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "gemini-3.5-flash";
 
 export function loadConfig(env = process.env) {
   const paypalBase = String(env.PAYPAL_API_BASE || DEFAULT_PAYPAL_BASE).replace(/\/+$/, "");
