@@ -66,7 +66,7 @@ async function readJson(res) {
   }
 }
 
-export function createLivePaypal({ baseUrl, clientId, clientSecret, webhookId = "", allowLive = false, fetchImpl = fetch }) {
+export function createLivePaypal({ baseUrl, clientId, clientSecret, webhookId = "", allowLive = false, fetchImpl = fetch, onActivity } = {}) {
   const url = isAllowedPaypalBase(baseUrl, { allowLive });
   const root = url.toString().replace(/\/$/, "");
   let cached = null;
@@ -108,21 +108,32 @@ export function createLivePaypal({ baseUrl, clientId, clientSecret, webhookId = 
       signal: AbortSignal.timeout(20000),
     });
     const json = await readJson(res);
+    const debugId = res.headers?.get?.("paypal-debug-id") || "";
     if (!res.ok) {
       const detail = json?.details?.map((item) => item.description || item.issue).filter(Boolean).join("; ");
       const message = json?.message || json?.error_description || `PayPal ${method} ${pathname} failed (${res.status}).`;
       const error = new Error(detail ? `${message} ${detail}` : message);
       error.status = res.status >= 500 ? 502 : 502;
+      error.debugId = debugId;
       throw error;
     }
-    return json;
+    return { json, debugId, httpStatus: res.status };
+  }
+
+  async function note(entry) {
+    if (!onActivity) return;
+    try {
+      await onActivity(entry);
+    } catch {
+      // Activity logging must not block the payment.
+    }
   }
 
   return {
     mode: "live",
     async createOrder({ amount, description, customId, returnUrl, cancelUrl, brandName }) {
       const value = paypalAmount(amount);
-      const order = await paypalFetch("/v2/checkout/orders", {
+      const { json: order, debugId } = await paypalFetch("/v2/checkout/orders", {
         method: "POST",
         body: {
           intent: "CAPTURE",
@@ -151,24 +162,40 @@ export function createLivePaypal({ baseUrl, clientId, clientSecret, webhookId = 
         },
       });
       const approve = approvalLink(order);
+      await note({
+        kind: "create",
+        ok: Boolean(order?.id && approve),
+        status: order?.status || "CREATED",
+        debugId,
+        orderId: order?.id || "",
+        source: "orders-v2",
+      });
       if (!order?.id || !approve) {
         throw new Error("PayPal created an order but did not return an approval link.");
       }
       return { id: order.id, status: order.status || "CREATED", approvalUrl: approve };
     },
     async getOrder(id) {
-      const order = await paypalFetch(`/v2/checkout/orders/${encodeURIComponent(id)}`);
+      const { json: order } = await paypalFetch(`/v2/checkout/orders/${encodeURIComponent(id)}`);
       return normalizeOrder(order);
     },
     async captureOrder(id) {
-      const order = await paypalFetch(`/v2/checkout/orders/${encodeURIComponent(id)}/capture`, {
+      const { json: order, debugId } = await paypalFetch(`/v2/checkout/orders/${encodeURIComponent(id)}/capture`, {
         method: "POST",
         body: {},
+      });
+      await note({
+        kind: "capture",
+        ok: true,
+        status: order?.status || "",
+        debugId,
+        orderId: id,
+        source: "orders-v2",
       });
       return normalizeOrder(order);
     },
     async verifyWebhook(headers, event) {
-      const result = await paypalFetch("/v1/notifications/verify-webhook-signature", {
+      const { json: result } = await paypalFetch("/v1/notifications/verify-webhook-signature", {
         method: "POST",
         body: {
           auth_algo: headers.authAlgo,
@@ -185,7 +212,15 @@ export function createLivePaypal({ baseUrl, clientId, clientSecret, webhookId = 
   };
 }
 
-export function createMockPaypal(store) {
+export function createMockPaypal(store, { onActivity } = {}) {
+  async function note(entry) {
+    if (!onActivity) return;
+    try {
+      await onActivity(entry);
+    } catch {
+      // Ignore activity logging failures.
+    }
+  }
   return {
     mode: "mock",
     async createOrder({ amount, description, customId, returnUrl, cancelUrl, publicBaseUrl }) {
@@ -204,6 +239,7 @@ export function createMockPaypal(store) {
         captureStatus: null,
       };
       await store.saveMockOrder(order);
+      await note({ kind: "create", ok: true, status: "CREATED", debugId: "", orderId: id, source: "mock" });
       return { id, status: "CREATED", approvalUrl };
     },
     async getOrder(id) {
@@ -223,6 +259,7 @@ export function createMockPaypal(store) {
         captureId: `MOCKCAP-${id.slice(5, 13)}`,
         captureStatus: "COMPLETED",
       });
+      await note({ kind: "capture", ok: true, status: "COMPLETED", debugId: "", orderId: id, source: "mock" });
       return normalizeOrder(updated);
     },
     async verifyWebhook() {

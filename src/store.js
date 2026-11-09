@@ -14,6 +14,8 @@ function emptyState() {
     conversations: [],
     bookedSlotIds: [],
     mockOrders: {},
+    leads: [],
+    activities: [],
   };
 }
 
@@ -31,6 +33,8 @@ function readState(filePath) {
     conversations: Array.isArray(parsed.conversations) ? parsed.conversations : [],
     bookedSlotIds: Array.isArray(parsed.bookedSlotIds) ? parsed.bookedSlotIds : [],
     mockOrders: parsed.mockOrders && typeof parsed.mockOrders === "object" ? parsed.mockOrders : {},
+    leads: Array.isArray(parsed.leads) ? parsed.leads : [],
+    activities: Array.isArray(parsed.activities) ? parsed.activities : [],
   };
 }
 
@@ -138,6 +142,25 @@ export function createStore(filePath) {
         draft.mockOrders[id] = { ...draft.mockOrders[id], ...patch };
       });
       return this.getMockOrder(id);
+    },
+    listLeads() {
+      return read().leads.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    },
+    async addLead(lead) {
+      await change((draft) => {
+        draft.leads.push(lead);
+      });
+      return this.listLeads().find((entry) => entry.id === lead.id) || null;
+    },
+    listActivities() {
+      return read().activities.slice();
+    },
+    async addActivity(entry) {
+      await change((draft) => {
+        draft.activities.unshift(entry);
+        draft.activities = draft.activities.slice(0, 40);
+      });
+      return this.listActivities()[0];
     },
   };
 }

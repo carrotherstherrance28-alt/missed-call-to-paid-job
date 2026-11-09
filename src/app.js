@@ -9,6 +9,7 @@ import { nid } from "./ids.js";
 import { liveComplete } from "./llm.js";
 import { mockComplete } from "./mockAgent.js";
 import { orderIdFromWebhook, createLivePaypal, createMockPaypal } from "./paypal.js";
+import { createToolkitPaypal, sandboxUsesToolkit } from "./paypalToolkit.js";
 import { paymentCard, presentJob, syncJobPayment } from "./payments.js";
 import { validatePriceList } from "./pricing.js";
 import { buildSlots } from "./slots.js";
@@ -55,11 +56,38 @@ async function refreshPending(store, paypal, { force = false } = {}) {
   return updated;
 }
 
+export function createChatLimiter() {
+  const hits = new Map();
+  return function allowChat(ip, { max, windowMs, now = Date.now() }) {
+    const recent = (hits.get(ip) || []).filter((stamp) => now - stamp < windowMs);
+    if (recent.length >= max) {
+      hits.set(ip, recent);
+      return false;
+    }
+    recent.push(now);
+    hits.set(ip, recent);
+    return true;
+  };
+}
+
 export function createApp(config) {
   const store = createStore(config.dataFile);
-  const paypal = config.mockPaypal
-    ? createMockPaypal(store)
-    : createLivePaypal({ ...config.paypal, fetchImpl: config.fetchImpl || fetch });
+  const allowChat = createChatLimiter();
+  const onActivity = (entry) => store.addActivity({ id: nid("act"), at: new Date().toISOString(), ...entry });
+  let paypal;
+  if (config.mockPaypal) {
+    paypal = createMockPaypal(store, { onActivity });
+  } else if (sandboxUsesToolkit(config.paypal.baseUrl)) {
+    const httpPaypal = createLivePaypal({ ...config.paypal, fetchImpl: config.fetchImpl || fetch, onActivity });
+    paypal = createToolkitPaypal({
+      clientId: config.paypal.clientId,
+      clientSecret: config.paypal.clientSecret,
+      onActivity,
+    });
+    paypal.verifyWebhook = httpPaypal.verifyWebhook.bind(httpPaypal);
+  } else {
+    paypal = createLivePaypal({ ...config.paypal, fetchImpl: config.fetchImpl || fetch, onActivity });
+  }
 
   const app = express();
   app.set("trust proxy", 1);
@@ -80,6 +108,9 @@ export function createApp(config) {
       mockMode: config.mockMode,
       model: config.llm.model,
       paypalBase: config.mockPaypal ? "mock" : config.paypal.baseUrl,
+      paypalVia: config.mockPaypal ? "mock" : paypal.via || "orders-v2",
+      publicBaseUrl: config.publicBaseUrl || "",
+      webhook: config.paypal.webhookId ? "verified" : "off",
       missing: mode.missing,
       banner: mode.banner,
     });
@@ -100,6 +131,19 @@ export function createApp(config) {
 
   app.post("/api/price-list/reset", async (_req, res) => {
     res.json(await store.setPriceList(structuredClone(defaultPriceList)));
+  });
+
+  app.get("/api/leads", (_req, res) => {
+    res.json({ leads: store.listLeads() });
+  });
+
+  app.get("/api/paypal/activity", (_req, res) => {
+    res.json({
+      note: config.mockPaypal
+        ? "These rows are offline mock calls. They are not PayPal sandbox calls."
+        : "Create and capture rows are PayPal sandbox calls. PayPal-Debug-Id is included when PayPal sends that header. A webhook row appears when PayPal posts one.",
+      activities: store.listActivities(),
+    });
   });
 
   app.get("/api/slots", (_req, res) => {
@@ -159,6 +203,11 @@ export function createApp(config) {
       const message = String(req.body?.message || "").trim();
       if (!message) return res.status(400).json({ error: "Message is required." });
       if (message.length > 2000) return res.status(400).json({ error: "Message is too long." });
+      if (!allowChat(req.ip || "unknown", { max: config.chatRateLimitMax, windowMs: config.chatRateLimitWindowMs })) {
+        return res.status(429).json({
+          error: "Lou is pausing this chat so the demo stays inside the model quota. Wait a few minutes and try again.",
+        });
+      }
 
       const mode = describeMode(config);
       if (!mode.ready) {
@@ -217,7 +266,17 @@ export function createApp(config) {
 
   app.post("/api/paypal/webhook", async (req, res, next) => {
     try {
+      const debugId = req.get("paypal-debug-id") || "";
       if (!config.paypal.webhookId) {
+        await onActivity({
+          kind: "webhook",
+          ok: false,
+          status: "ignored",
+          debugId,
+          orderId: orderIdFromWebhook(req.body) || "",
+          source: config.mockPaypal ? "mock" : "orders-v2",
+          detail: "PAYPAL_WEBHOOK_ID is not set",
+        });
         return res.status(200).json({
           received: true,
           applied: false,
@@ -235,8 +294,27 @@ export function createApp(config) {
         },
         req.body,
       );
-      if (!verified) return res.status(400).json({ error: "Invalid webhook signature." });
+      if (!verified) {
+        await onActivity({
+          kind: "webhook",
+          ok: false,
+          status: "rejected",
+          debugId,
+          orderId: orderIdFromWebhook(req.body) || "",
+          source: "orders-v2",
+          detail: "Invalid webhook signature",
+        });
+        return res.status(400).json({ error: "Invalid webhook signature." });
+      }
       const orderId = orderIdFromWebhook(req.body);
+      await onActivity({
+        kind: "webhook",
+        ok: true,
+        status: req.body?.event_type || "event",
+        debugId,
+        orderId: orderId || "",
+        source: "orders-v2",
+      });
       if (!orderId) return res.status(200).json({ received: true, applied: false });
       const job = store.getJobByPaypalOrder(orderId);
       if (!job) return res.status(200).json({ received: true, applied: false });

@@ -38,10 +38,11 @@ function setStage(stage) {
 
 function renderPayment(parent, payment) {
   const card = el("aside", "pay-card");
+  card.dataset.jobId = payment.jobId;
   card.append(
     el("span", "who", payment.checkoutMode === "mock" ? "Mock checkout" : "PayPal sandbox"),
     el("strong", null, `${money(payment.depositAmount)} deposit`),
-    el("p", null, `${payment.slotLabel}. Saved here only — not a calendar booking.`),
+    el("p", null, `${payment.slotLabel}. Saved here only. Not on an external calendar.`),
   );
   if (payment.paymentStatus === "paid") {
     card.append(el("span", "pill paid", "Paid"));
@@ -117,7 +118,7 @@ async function send(text) {
     watchPayments();
   } catch (err) {
     pending.remove();
-    addBubble("lou", "The chat request failed. Nothing was booked.");
+    addBubble("lou", "The chat request failed. Nothing was saved.");
     messageEl.value = message;
   } finally {
     busy = false;
@@ -149,8 +150,9 @@ async function loadHistory() {
 function watchPayments() {
   clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
-    const pending = [...logEl.querySelectorAll(".pay-card")].length;
-    if (!conversationId || !pending) return;
+    const pending = [...logEl.querySelectorAll(".pay-card")].filter((card) => !card.querySelector(".pill.paid"));
+    if (!conversationId || !pending.length) return;
+    await Promise.all(pending.map((card) => fetch(`/api/jobs/${card.dataset.jobId}/refresh`, { method: "POST" })));
     const res = await fetch(`/api/conversations/${conversationId}`);
     if (!res.ok) return;
     const data = await res.json();

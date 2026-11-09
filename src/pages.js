@@ -67,7 +67,7 @@ export function renderReturnPage({ job, banner }) {
         <div><dt>Status</dt><dd>${escapeHtml(job.paymentStatus)} · ${escapeHtml(job.paypalOrderStatus || "")}</dd></div>
       </dl>
       ${job.paymentNote ? `<p class="note">${escapeHtml(job.paymentNote)}</p>` : ""}
-      <p class="fine">${job.checkoutMode === "mock" ? "This was the offline mock checkout. No sandbox call was made." : "This was a PayPal sandbox payment. No real money moved."} The requested time is stored here only. It is not a calendar booking.</p>
+      <p class="fine">${job.checkoutMode === "mock" ? "This was the offline mock checkout. No sandbox call was made." : "This was a captured PayPal sandbox order."} The requested time is stored here only. It is not on an external calendar.</p>
       <div class="row-actions">
         <a class="button" href="/dashboard">Open the shop board</a>
         <a class="button ghost" href="/?c=${escapeHtml(job.conversationId)}">Back to the chat</a>
@@ -95,7 +95,7 @@ export function renderMockCheckout({ order, shopName, banner }) {
     <article class="panel mock-pay">
       <p class="eyebrow">Offline mock checkout</p>
       <h1>Approve this deposit stand-in.</h1>
-      <p class="lede">This is not PayPal. Lou shows this page only when PayPal is simulated. The hackathon demo with sandbox keys redirects to PayPal's own checkout instead.</p>
+      <p class="lede">This is not PayPal. Lou shows this page only when PayPal is simulated. With sandbox keys, this step is PayPal's own checkout.</p>
       <dl class="facts">
         <div><dt>Shop</dt><dd>${escapeHtml(shopName)}</dd></div>
         <div><dt>Deposit</dt><dd>$${escapeHtml(order.amount)}</dd></div>

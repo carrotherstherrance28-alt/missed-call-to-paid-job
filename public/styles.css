@@ -32,7 +32,7 @@ body { margin: 0; min-height: 100vh; }
 img, svg { display: block; }
 button, input, textarea { font: inherit; color: inherit; }
 a { color: var(--copper); }
-:focus-visible { outline: 3px solid var(--copper); outline-offset: 2px; }
+:focus-visible { outline: 3px solid #1b1914; outline-offset: 3px; }
 code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.92em; }
 
 .sr-only {
@@ -91,13 +91,16 @@ code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.92em;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.nav { display: flex; gap: 6px; }
+.nav { display: flex; flex-wrap: wrap; gap: 6px; }
 .nav a {
   text-decoration: none;
   color: var(--ink);
   padding: 8px 12px;
   border-radius: 999px;
   font-weight: 600;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
 }
 .nav a[aria-current="page"], .nav a:hover { background: white; }
 
@@ -132,7 +135,7 @@ h1 { font-size: clamp(2.2rem, 4vw, 3.6rem); line-height: 1.02; margin: 0 0 12px;
 h2 { margin: 0; font-size: 1.7rem; }
 .lede { font-size: 1.08rem; line-height: 1.5; margin: 0 0 18px; }
 .fine, .note { color: var(--muted); line-height: 1.45; }
-.kicker { margin: 0; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.72rem; color: var(--spark); }
+.kicker { margin: 0; letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.78rem; color: #f6d7b0; }
 
 .steps { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 8px; }
 .steps li {
@@ -201,6 +204,7 @@ h2 { margin: 0; font-size: 1.7rem; }
   border-radius: 16px;
   background: white;
   border: 1px solid var(--line);
+  overflow-wrap: anywhere;
 }
 .bubble.user .text { background: var(--copper); color: white; border-color: transparent; border-bottom-right-radius: 6px; }
 .bubble.lou .text { border-bottom-left-radius: 6px; }
@@ -221,13 +225,14 @@ h2 { margin: 0; font-size: 1.7rem; }
   border: 1px solid var(--line);
   background: white;
   border-radius: 999px;
-  padding: 7px 10px;
+  padding: 8px 12px;
+  min-height: 44px;
   cursor: pointer;
 }
 .composer-tools { padding-bottom: 12px; }
 #composer {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   padding: 10px 12px 8px;
 }
@@ -238,7 +243,9 @@ textarea {
   padding: 10px 12px;
   background: white;
   min-height: 52px;
+  font-size: 16px;
 }
+textarea::placeholder { color: #5c564c; }
 .button, #composer button, .danger {
   border: 0;
   border-radius: 999px;
@@ -268,7 +275,14 @@ textarea {
   min-width: 140px;
 }
 .stat b { display: block; font-family: Fraunces, Georgia, serif; font-size: 1.6rem; }
-.board { display: grid; gap: 14px; }
+.board, .activity, .leads { display: grid; gap: 14px; }
+.activity article, .lead {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+}
+#log, #board, #price-form { scroll-margin-top: 88px; }
 .job {
   background: var(--card);
   border: 1px solid var(--line);
