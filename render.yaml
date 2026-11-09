@@ -15,7 +15,7 @@ services:
       - key: MOCK_MODE
         value: "false"
       - key: LLM_BASE_URL
-        value: https://generativelanguage.googleapis.com/v1beta/openai
+        value: https://generativelanguage.googleapis.com/v1beta/openai/
       - key: LLM_MODEL
         value: gemini-2.5-flash
       - key: PAYPAL_API_BASE

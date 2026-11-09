@@ -1,5 +1,6 @@
+import { assertPublicReturnBase } from "./config.js";
 import { nid } from "./ids.js";
-import { assertContact } from "./people.js";
+import { assertContact, formatPhone, phoneDigits } from "./people.js";
 import { computeQuote } from "./pricing.js";
 import { findSlot, SLOT_NOTE } from "./slots.js";
 import { buildSlots } from "./slots.js";
@@ -42,6 +43,14 @@ async function createJob({ store, paypal, baseUrl, conversationId, checkoutMode,
       ok: false,
       error: "That time slot is not one this demo can store. Call list_open_slots and use one of those ids.",
     };
+  }
+
+  if (paypal.mode === "live") {
+    try {
+      assertPublicReturnBase(baseUrl);
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
   }
 
   const prep = await store.change((draft) => {
@@ -138,6 +147,30 @@ export function createToolHandlers({ store, paypal, baseUrl, conversationId }) {
           price: item.price,
           unit: item.unit,
         })),
+      };
+    },
+    async save_followup(args) {
+      const name = String(args?.customerName || "").trim();
+      const phone = formatPhone(args?.phone || "");
+      const request = String(args?.request || "").trim().slice(0, 180);
+      if (name.length < 2) return { ok: false, error: "Need a name for the follow-up." };
+      if (phoneDigits(phone).length < 10) return { ok: false, error: "Need a phone number for the follow-up." };
+      if (request.length < 3) return { ok: false, error: "Need a short note about what they asked for." };
+      const lead = {
+        id: nid("lead"),
+        conversationId,
+        customerName: name,
+        phone,
+        request,
+        createdAt: new Date().toISOString(),
+      };
+      await store.addLead(lead);
+      return {
+        ok: true,
+        leadId: lead.id,
+        customerName: lead.customerName,
+        phone: lead.phone,
+        note: "Saved for the owner. No price and no PayPal order.",
       };
     },
     async list_open_slots() {

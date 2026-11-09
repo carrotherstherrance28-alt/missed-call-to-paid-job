@@ -1,10 +1,11 @@
-const DEFAULT_LLM_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
+const DEFAULT_LLM_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/";
 const DEFAULT_PAYPAL_BASE = "https://api-m.sandbox.paypal.com";
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
 export function loadConfig(env = process.env) {
-  const paypalBase = String(env.PAYPAL_API_BASE || DEFAULT_PAYPAL_BASE).replace(/\/$/, "");
-  const llmBase = String(env.LLM_BASE_URL || DEFAULT_LLM_BASE).replace(/\/$/, "");
+  const paypalBase = String(env.PAYPAL_API_BASE || DEFAULT_PAYPAL_BASE).replace(/\/+$/, "");
+  const llmBase = String(env.LLM_BASE_URL || DEFAULT_LLM_BASE).replace(/\/+$/, "");
+  const publicBaseUrl = String(env.PUBLIC_BASE_URL || env.RENDER_EXTERNAL_URL || "").trim().replace(/\/+$/, "");
   const apiKey = String(env.LLM_API_KEY || "").trim();
   const clientId = String(env.PAYPAL_CLIENT_ID || "").trim();
   const clientSecret = String(env.PAYPAL_CLIENT_SECRET || "").trim();
@@ -30,11 +31,16 @@ export function loadConfig(env = process.env) {
   if (!mockLlm && !hasLlm) warnings.push("LLM_API_KEY is missing and MOCK_MODE=false.");
   if (!mockPaypal && !clientId) warnings.push("PAYPAL_CLIENT_ID is missing and MOCK_MODE=false.");
   if (!mockPaypal && !clientSecret) warnings.push("PAYPAL_CLIENT_SECRET is missing and MOCK_MODE=false.");
+  if (!mockPaypal && !publicBaseUrl) {
+    warnings.push("PUBLIC_BASE_URL is unset. PayPal return URLs use the request host. On Render, RENDER_EXTERNAL_URL covers this when it is set.");
+  }
 
   return {
     port: Number(env.PORT || 3000),
     dataFile: env.DATA_FILE || "./data/lou.json",
-    publicBaseUrl: String(env.PUBLIC_BASE_URL || "").replace(/\/$/, ""),
+    publicBaseUrl,
+    chatRateLimitMax: Number(env.CHAT_RATE_LIMIT_MAX || 30),
+    chatRateLimitWindowMs: Number(env.CHAT_RATE_LIMIT_WINDOW_MS || 10 * 60 * 1000),
     mockLlm,
     mockPaypal,
     mockMode: env.MOCK_MODE || "auto",
@@ -119,6 +125,20 @@ export function requestBase(req, config) {
   if (config.publicBaseUrl) return config.publicBaseUrl;
   const forwarded = req.get("x-forwarded-proto");
   const proto = (forwarded || req.protocol || "http").split(",")[0].trim();
-  const host = req.get("x-forwarded-host") || req.get("host");
+  const host = String(req.get("x-forwarded-host") || req.get("host") || "").split(",")[0].trim();
   return `${proto}://${host}`;
+}
+
+export function assertPublicReturnBase(baseUrl) {
+  let url;
+  try {
+    url = new URL(baseUrl);
+  } catch {
+    throw new Error("PayPal needs an absolute return URL. Set PUBLIC_BASE_URL to this app's public https address.");
+  }
+  const local = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1";
+  if (!local && url.protocol !== "https:") {
+    throw new Error("PayPal return URLs on a public host must be https. Set PUBLIC_BASE_URL to the Render https URL.");
+  }
+  return url.origin;
 }

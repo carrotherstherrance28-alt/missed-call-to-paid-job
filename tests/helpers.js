@@ -60,7 +60,7 @@ export function startFakePaypal() {
       if (raw && (req.headers["content-type"] || "").includes("json")) body = JSON.parse(raw);
       requests.push({ method: req.method, path: url.pathname, headers: req.headers, raw, body });
       const send = (status, payload) => {
-        res.writeHead(status, { "content-type": "application/json" });
+        res.writeHead(status, { "content-type": "application/json", "paypal-debug-id": "DBG-TEST" });
         res.end(JSON.stringify(payload));
       };
       if (url.pathname === "/v1/oauth2/token") {

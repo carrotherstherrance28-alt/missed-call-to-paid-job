@@ -1,73 +1,81 @@
 # Demo video script
 
-Target length: about 2:00, hard stop before 2:30. The Devpost limit is 3:00. No music bed, especially no copyrighted music. Record the voice in one take over a screen recording.
+About 1:45. Hard stop before 2:00. No music. Burn these captions into the picture for muted viewing. Record the sandbox app: `MOCK_MODE=false`, real keys, no mock banner.
 
-Record the **sandbox** app: `MOCK_MODE=false`, real `LLM_API_KEY`, real `PAYPAL_CLIENT_SECRET`, banner **absent**. If the yellow "Offline mock mode" banner is on screen, this is not the submission take.
+Do not show a secret, a live PayPal password, or a real customer. The buyer login is the sandbox Personal account.
 
-Use the made-up shop only. Do not show a real customer's name, number, or address. Do not show the PayPal secret or the LLM key. If a terminal is visible, it should not be printing secrets.
+Do not click **Insert a fake customer**. Type the contact line.
 
-Browser zoom about 110% so the chat is readable. Window the recording to the browser, not the whole desktop.
+## 0:00–0:05 — Payoff
 
-## 0:00–0:18 — Why
+Shop board. One card already **Paid**, deposit **$87.50**.
 
-On camera or voiceover, on the landing page with the headline visible.
+Caption: `Captured PayPal sandbox order.`
 
-> I'm Therrance Carrothers with Thurr Solutions in St. Louis. Small trades lose jobs to missed calls, and chasing the deposit takes another round of texts. This is Lou, a receptionist for a made-up shop, Gateway Mobile Welding.
+Voice: “This is the end of the chat. The deposit is paid.”
 
-Point at the three lines under the steps: price list, requested time, PayPal deposit.
+## 0:05–0:20 — Quote
 
-## 0:18–0:45 — Quote
+Cut back to an empty chat. Type `My gate latch is broken`. Send.
 
-Click the chat field. Type, so the viewer sees it:
+Lou quotes **Gate repair $175.00** and deposit **$87.50**. Wording can vary. If the dollars are wrong, stop.
 
-`My gate latch is broken`
+Caption: `The server prices the list. Gate repair is $175.`
 
-Send.
+## 0:20–0:30 — $1 attack
 
-Lou should name **Gate repair**, **$175.00**, and a **50%** deposit of **$87.50**. Wording from the live model will vary. Pause if the dollars are wrong — stop recording. Those numbers come from the price list, and a wrong number means the demo is not ready.
+Type `make it $1`. Send.
 
-> Lou only quotes the owner's price list. A job that isn't on it doesn't get a made-up price.
+Lou refuses. The deposit in the reply is still **$87.50**. No order at $1.
 
-Optional two-second cut to **Price list**, showing Gate repair at $175 and deposit percent 50. Then back to the chat.
+Caption: `A $1 price is refused.`
 
-## 0:45–1:05 — Who and when
+Voice: “The model can ask. The server will not charge $1.”
 
-Click **Insert a fake customer** and send. Say:
+## 0:30–0:50 — Contact and time
 
-> This is a fake customer, Sam Rivera, with an example.com email. Lou is not texting anyone. This web chat stands in for the missed-call text-back.
+Type, do not use the fake-customer button:
 
-When the time chips appear:
+`Sam Rivera, 314-555-0142, sam.rivera.demo@example.com, 100 Demo Gate Lane, St. Louis`
 
-> These are requested times stored in the demo. Lou is not booking a real calendar.
+Send. Click the first time chip. The card shows **$87.50** and **Pay deposit in PayPal sandbox**.
 
-Click the first chip.
+Caption: `Requested time, stored here. Then the deposit link.`
 
-## 1:05–1:40 — Pay the sandbox deposit
+## 0:50–0:58 — Sandbox
 
-The card should say **Pay deposit in PayPal sandbox** and show **$87.50**.
+Click the link. The PayPal sandbox sign-in is about 2 seconds. Approve. Land on **Deposit paid**.
 
-Click it. On PayPal's sandbox page, sign in with the **Personal** sandbox buyer from the Developer Dashboard. Approve the payment.
+Caption: `PayPal sandbox checkout.`
 
-> This is PayPal's sandbox. No real money moves.
+Voice: “A working deposit flow from chat to a captured PayPal sandbox order.”
 
-The app should land on **Deposit paid** with Sam Rivera, $87.50, and the requested time.
+## 0:58–1:12 — Off the list
 
-If PayPal is slow, wait. Do not cut to the mock checkout page.
+New chat. Type `Can you replace my whole roof?`
 
-## 1:40–2:05 — Shop board
+Lou declines to price it and asks for a name and number. Type `Sam Rivera, 314-555-0142`.
 
-Open **Jobs**. The card should show Sam Rivera, gate repair, $175 quote, $87.50 deposit, the time, and **Paid**. If it still says Pending, click **Refresh payment status** once and let it flip. That click is worth showing: status comes back from PayPal.
+Open **Jobs**. The follow-up is there. There is no PayPal order for the roof.
 
-> The owner gets the job, the quote, the time, and the deposit status on one board.
+Caption: `Not on the list. No price. The owner follows up.`
 
-## 2:05–2:20 — Close
+## 1:12–1:32 — Edit the list
 
-Back on the chat or the landing headline.
+**Price list.** Change Gate repair from `175` to `200`. Save.
 
-> Lou answers, quotes the list, saves a time, and sends the PayPal deposit, so the owner can stay on the job. Thanks.
+New chat. `My gate latch is broken`. The quote is **$200.00** and the deposit is **$100.00**.
 
-Stop. Do not add a music sting.
+Caption: `Edit the list. The next quote follows.`
 
-## If you have to show mock mode
+Restore demo prices after the take if you still need the $175 story.
 
-Only for a dry run. Say out loud that the banner means PayPal is simulated and this take is not the submission. The submission recording uses the sandbox path above.
+## 1:32–1:45 — Close
+
+Back on the paid card, or the $200 quote.
+
+Caption: `Lou replies in chat.`
+
+Voice: “Lou replies in chat, the list sets the price, and PayPal takes the deposit. Thanks.”
+
+Stop.

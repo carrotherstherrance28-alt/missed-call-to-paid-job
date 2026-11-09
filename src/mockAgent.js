@@ -3,6 +3,10 @@ import { computeQuote } from "./pricing.js";
 import { formatUSD } from "./money.js";
 import { extractContact } from "./people.js";
 
+export function isPriceChallenge(text) {
+  return /\$\s*1\b/i.test(text) || /\b(make it|change it to|only|for)\s+\$?\s*1\b/i.test(text);
+}
+
 const KEYWORDS = {
   "gate-repair": ["gate", "latch", "hinge"],
   "railing-section": ["railing", "rail"],
@@ -163,10 +167,10 @@ function paymentSummary(created, contact) {
   const who = contact?.name || "you";
   const checkoutNote =
     created.checkoutMode === "mock"
-      ? "This link opens a labeled mock checkout because the server is in offline mock mode. No money moves."
-      : "This link opens PayPal sandbox checkout. No real charge.";
+      ? "This link opens a labeled mock checkout. It is not a PayPal sandbox call."
+      : "This link opens PayPal sandbox checkout.";
   return [
-    `Requested ${created.slotLabel} for ${who}. That time is saved on the shop board. It is not a calendar booking.`,
+    `Requested ${created.slotLabel} for ${who}. That time is saved on the shop board. It is not on an external calendar.`,
     `Deposit due: ${formatUSD(created.depositAmount)} (${created.depositPercent}% of ${formatUSD(created.subtotal)}).`,
     checkoutNote,
     created.approvalUrl,
@@ -180,6 +184,9 @@ export function mockComplete(messages) {
   const contact = extractContact(all);
 
   const existing = latestTool(messages, "create_job_and_deposit");
+  if (existing?.ok && isPriceChallenge(latest)) {
+    return say(`I won't change that deposit. It stays ${formatUSD(existing.depositAmount)} because the server prices it from the list.`);
+  }
   if (existing?.ok) return say(paymentSummary(existing, contact));
 
   if (!calledThisTurn(messages, "get_price_list")) return toolCall("get_price_list", {});
@@ -189,10 +196,33 @@ export function mockComplete(messages) {
   const match = matchLineItems(all, price.items || []);
   if (match.kind === "none") {
     const names = (price.items || []).map((item) => item.name).join(", ");
-    return say(`I can only quote what's on the shop price list: ${names}. Which of those do you need? I won't invent a price.`);
+    const saved = latestTool(messages, "save_followup");
+    if (saved?.ok) {
+      return say(`That one needs the owner to look at it. I saved ${saved.customerName}'s number and he'll follow up. I did not quote a price.`);
+    }
+    if (contact.name && contact.phone && !calledThisTurn(messages, "save_followup")) {
+      return toolCall("save_followup", {
+        customerName: contact.name,
+        phone: contact.phone,
+        request: texts[0].slice(0, 180),
+      });
+    }
+    return say(
+      `That one needs the owner to look at it. Leave your name and number and he'll follow up. I can quote: ${names}. I won't invent a price.`,
+    );
   }
   if (match.kind === "many") {
     return say(`That could be more than one price-list item (${match.names.join(" and ")}). Tell me which one to quote. I won't bundle them into a made-up price.`);
+  }
+
+  if (isPriceChallenge(latest)) {
+    const quote = computeQuote(
+      { business: { depositPercent: price.depositPercent }, items: price.items },
+      [{ itemId: match.item.id, quantity: match.quantity }],
+    );
+    return say(
+      `I won't change the price. ${match.item.name} stays ${formatUSD(match.item.price)} on the list, and the deposit stays ${formatUSD(quote.depositAmount)}. A $1 price is not on the list.`,
+    );
   }
 
   if (!contact.complete) {

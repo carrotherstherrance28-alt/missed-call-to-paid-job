@@ -11,10 +11,27 @@ export const toolDefinitions = [
   {
     type: "function",
     function: {
+      name: "save_followup",
+      description:
+        "Save a name and phone for the owner to follow up when the job is not on the price list. Do not invent a price. Do not create a PayPal order.",
+      parameters: {
+        type: "object",
+        properties: {
+          customerName: { type: "string" },
+          phone: { type: "string" },
+          request: { type: "string" },
+        },
+        required: ["customerName", "phone", "request"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "list_open_slots",
       description:
-        "List requested-time slots stored by this demo. They are not a live calendar and must not be described as a confirmed external booking.",
-      parameters: { type: "object", properties: {}, additionalProperties: false },
+        "List requested-time slots stored by this demo. They are not a live calendar.",
+      parameters: { type: "object", properties: {} },
     },
   },
   {
@@ -25,7 +42,6 @@ export const toolDefinitions = [
         "Create the job and a PayPal deposit checkout after the customer has agreed to a price-list quote and one slot. Pass item ids and quantities only. The server computes the deposit. The approvalUrl in the result is the only payment link you may share.",
       parameters: {
         type: "object",
-        additionalProperties: false,
         properties: {
           customerName: { type: "string" },
           phone: { type: "string" },
@@ -37,7 +53,6 @@ export const toolDefinitions = [
             type: "array",
             items: {
               type: "object",
-              additionalProperties: false,
               properties: {
                 itemId: { type: "string" },
                 quantity: { type: "integer" },
@@ -56,11 +71,13 @@ export function buildSystemPrompt(priceList) {
   const business = priceList.business;
   return [
     `You are Lou, the receptionist for ${business.name}, a made-up mobile welding shop in ${business.city}.`,
-    "You are in a web chat that stands in for a missed-call text-back. You do not send SMS, place calls, or answer a phone line.",
+    "You reply in a web chat. You do not answer phone calls, send SMS, or book a calendar.",
     "Call get_price_list before you quote. Quote only names and prices from that tool. Never invent a service, fee, discount, or price.",
+    "If the customer asks to change a price, including to $1, refuse. The server prices the PayPal order from the list.",
+    "If nothing on the list fits, say so, do not invent a price, and call save_followup once you have their name and phone. Tell them: That one needs the owner to look at it. Leave your name and number and he'll follow up.",
     "If the request matches more than one item, ask which one. Do not invent a bundle price.",
     `The deposit percent is ${business.depositPercent}%. The server computes the deposit when you create the payment. Do not state a different deposit.`,
-    "Call list_open_slots before you offer times. Those are requested times stored by this demo. Never say you checked or booked a real calendar.",
+    "Call list_open_slots before you offer times. Those are requested times stored by this demo. Never say you checked a real calendar.",
     "Collect the customer's full name, mobile phone, email, and street address or area before create_job_and_deposit.",
     "Call create_job_and_deposit only after they agree to the quote and one slot id from the tool. Pass item ids and quantities only.",
     "The approvalUrl returned by the tool is the only payment link you may give. Never invent a PayPal URL.",
@@ -99,6 +116,7 @@ function normalizeAssistant(message) {
             ? call.function.arguments
             : JSON.stringify(call.function?.arguments || call.arguments || {}),
       },
+      ...(call.extra_content ? { extra_content: call.extra_content } : {}),
     }))
     .filter((call) => call.function.name);
   return {

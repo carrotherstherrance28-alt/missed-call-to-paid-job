@@ -71,7 +71,7 @@ function render(jobs) {
     if (job.paymentNote) card.append(el("p", "note", job.paymentNote));
     card.append(el("p", "fine", job.checkoutMode === "mock"
       ? "Offline mock order. No sandbox call was made."
-      : "PayPal sandbox order. No real money moves."));
+      : "PayPal sandbox order."));
     const actions = el("div", "row-actions");
     const refresh = el("button", "button ghost", "Refresh this job");
     refresh.type = "button";
@@ -104,6 +104,47 @@ async function refreshOne(id, button) {
   await load(false);
 }
 
-document.querySelector("#refresh-all").addEventListener("click", () => load(true));
-load(true);
-setInterval(() => load(true), 15000);
+function renderLeads(leads) {
+  const root = document.querySelector("#leads");
+  root.replaceChildren();
+  if (!leads.length) {
+    root.append(el("p", "fine", "No follow-ups yet."));
+    return;
+  }
+  for (const lead of leads) {
+    const card = el("article", "lead");
+    card.append(el("h3", null, lead.customerName), el("p", null, lead.request), el("p", "fine", lead.phone));
+    root.append(card);
+  }
+}
+
+function renderActivity(payload) {
+  document.querySelector("#activity-note").textContent = payload.note || "";
+  const root = document.querySelector("#activity");
+  root.replaceChildren();
+  const rows = payload.activities || [];
+  if (!rows.length) {
+    root.append(el("p", "fine", "No PayPal calls yet."));
+    return;
+  }
+  for (const row of rows) {
+    const card = el("article");
+    const title = `${row.kind} · ${row.ok ? row.status : "failed"}`;
+    card.append(
+      el("strong", null, title),
+      el("p", "fine", `${row.source} · ${row.orderId || "no order id"}`),
+      el("p", null, row.debugId ? `PayPal-Debug-Id ${row.debugId}` : "PayPal-Debug-Id not sent"),
+    );
+    root.append(card);
+  }
+}
+
+async function loadSide() {
+  const [leadsRes, activityRes] = await Promise.all([fetch("/api/leads"), fetch("/api/paypal/activity")]);
+  renderLeads((await leadsRes.json()).leads || []);
+  renderActivity(await activityRes.json());
+}
+
+document.querySelector("#refresh-all").addEventListener("click", () => load(true).then(loadSide));
+load(true).then(loadSide);
+setInterval(() => load(true).then(loadSide), 15000);
