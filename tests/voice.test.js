@@ -60,7 +60,7 @@ test("mock missed call and a later chat share one customer", async () => {
     const spoken = await call.json();
     assert.match(spoken.say, /name/i);
     const customers = await (await fetch(`${base}/api/customers`)).json();
-    assert.equal(customers.twilio, "mock");
+    assert.equal(customers.twilio, "simulated");
     assert.equal(customers.customers.length, 1);
     assert.match(customers.customers[0].ownerSummary, /Thurr Solutions/);
     assert.equal(customers.customers[0].timeline.some((event) => event.kind === "sms"), true);
@@ -104,6 +104,8 @@ test("a signed Twilio webhook greets the caller as Lou", async () => {
         body,
       });
       assert.equal(bad.status, 403);
+      const health = await (await fetch(`${base}/api/health`)).json();
+      assert.equal(health.twilio, "configured");
     },
   );
 });

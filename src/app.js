@@ -122,7 +122,7 @@ export function createApp(config) {
       paypalVia: config.mockPaypal ? "mock" : paypal.via || "orders-v2",
       publicBaseUrl: config.publicBaseUrl || "",
       webhook: config.paypal.webhookId ? "verified" : "off",
-      twilio: config.twilio.live ? "live" : "mock",
+      twilio: config.twilio.live ? "configured" : "simulated",
       missing: mode.missing,
       banner: mode.banner,
     });
@@ -166,7 +166,7 @@ export function createApp(config) {
   });
 
   app.get("/api/customers", (_req, res) => {
-    res.json({ twilio: config.twilio.live ? "live" : "mock", customers: listCustomers(store) });
+    res.json({ twilio: config.twilio.live ? "configured" : "simulated", customers: listCustomers(store) });
   });
 
   app.post("/api/mock/call", async (req, res, next) => {

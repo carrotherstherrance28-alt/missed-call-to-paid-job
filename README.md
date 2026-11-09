@@ -8,11 +8,38 @@ Lou replies in a web chat for **Thurr Solutions** in St. Louis. The model picks 
 
 The shop board shows the quote, the requested time, and whether the deposit is pending or paid.
 
-I built this during the PayPal AI Hackathon. I am Therrance Carrothers, Thurr Solutions LLC, St. Louis. The shop is not a real business. Lou does not text or call anyone. [MIT License](LICENSE).
+I built this during the PayPal AI Hackathon. I am Therrance Carrothers, Thurr Solutions LLC, St. Louis. [MIT License](LICENSE).
+
+**Judges:** the first load on Render's free tier can take about 30 seconds while the service wakes up.
+
+## What is built
+
+**Built and tested** (no Twilio account required; `npm test` covers these):
+
+- Web chat, price-list quotes, and the $1 price refusal
+- PayPal sandbox deposit create, capture, and a read-only deposit check
+- Requested time stored on the job (not a confirmed calendar booking)
+- Owner follow-up when the job is not on the price list
+- Demo seed: Thurr Solutions price list, one pending job, one paid job
+- Shop board, including the Simulated call and missed-call buttons
+
+**Built, and simulated in this demo until a live Twilio test:**
+
+- Voice webhook (`POST /api/twilio/voice`)
+- Missed-call text-back
+- One lead record when a call and a chat share a phone number
+
+Use the **Simulated** buttons on the shop board to see those three. They do not place a call or send an SMS. I have not live-tested them with a real Twilio number yet. When `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` are all set, `/api/health` reports `twilio=configured` and signed webhooks can run the same script.
+
+**Not built:**
+
+- Calendar booking
+- Live SMS registration (10DLC or toll-free verification)
+- An email sender (`OWNER_EMAIL` is only a label; `OWNER_WEBHOOK_URL` can receive the summary)
 
 ## Deposit status
 
-Lou can call `check_deposit_status`. That tool only reads the PayPal sandbox order (`get_order` on the agent toolkit, or Orders v2 GET on the test client). If the capture is complete, Lou says the deposit is in. Otherwise she says it is still pending. The tool does not change the amount.
+Lou can call `check_deposit_status`. That tool only reads the PayPal sandbox order (`get_order` on the agent toolkit, or an Orders v2 GET). If the capture is complete, Lou says the deposit is in. Otherwise she says it is still pending. The tool does not change the amount.
 
 ## Demo seed
 
@@ -73,7 +100,7 @@ Express ── JSON file (jobs, follow-ups, price list, PayPal activity)
     └── Server prices the deposit, then
           PayPal Agent Toolkit create_order / get_order / pay_order
           on api-m.sandbox.paypal.com
-          (tests and a custom base URL use the Orders v2 HTTP client)
+          (tests and a custom base URL use Orders v2 HTTP calls)
 ```
 
 One conversation creates one PayPal order. Asking again returns the same link.
@@ -82,7 +109,7 @@ One conversation creates one PayPal order. Asking again returns the same link.
 
 Sandbox base URL: `https://api-m.sandbox.paypal.com`
 
-Lou refuses a live PayPal client against any host other than `*.sandbox.paypal.com` (and `127.0.0.1` for tests) unless `PAYPAL_ALLOW_LIVE=true`. Leave that unset.
+Lou refuses a PayPal host other than `*.sandbox.paypal.com` (and `127.0.0.1` for tests) unless `PAYPAL_ALLOW_LIVE=true`. Leave that unset.
 
 | Call | Why |
 |---|---|
@@ -126,7 +153,7 @@ npm start
 npm test
 ```
 
-`npm test` does not call `api-m.sandbox.paypal.com` or Gemini. It does call the Orders v2 client against a local stand-in, and it checks the toolkit `create_order` arguments.
+`npm test` does not call `api-m.sandbox.paypal.com` or Gemini. It does call Orders v2 against a local stand-in, and it checks the toolkit `create_order` arguments.
 
 ### Sandbox demo
 
@@ -136,7 +163,7 @@ LLM_API_KEY=your-gemini-key
 LLM_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
 LLM_MODEL=gemini-2.5-flash
 PAYPAL_API_BASE=https://api-m.sandbox.paypal.com
-PAYPAL_CLIENT_ID=your-sandbox-client-id
+PAYPAL_CLIENT_ID=your-sandbox-app-id
 PAYPAL_CLIENT_SECRET=your-sandbox-secret
 PUBLIC_BASE_URL=http://localhost:3000
 ```
@@ -156,7 +183,7 @@ If `MOCK_MODE=false` and a secret is missing, chat returns 503. Lou will not qui
 - `PUBLIC_BASE_URL` — the service `https` URL. If you leave it blank, Lou uses Render's `RENDER_EXTERNAL_URL`.
 - `PAYPAL_WEBHOOK_ID` — optional
 
-The blueprint sets `MOCK_MODE=false` and the sandbox base URL. The sandbox client id is in the blueprint as a public identifier. The secret is not.
+The blueprint sets `MOCK_MODE=false` and the sandbox base URL. The sandbox app id is in the blueprint as a public identifier. The secret is not.
 
 Render's free tier sleeps. The first load after sleep is slow. The disk is ephemeral: `data/lou.json` disappears when the service redeploys. Chat is limited to 30 messages per 10 minutes per IP so the Gemini free tier can last through judging.
 
@@ -174,7 +201,7 @@ To receive webhooks, register `https://YOUR_SERVICE/api/paypal/webhook` on the s
 | `LLM_API_KEY` | Bearer token. Secret. |
 | `LLM_MODEL` | Default `gemini-2.5-flash`. |
 | `PAYPAL_API_BASE` | Default `https://api-m.sandbox.paypal.com`. |
-| `PAYPAL_CLIENT_ID` | Sandbox client id (public identifier). |
+| `PAYPAL_CLIENT_ID` | Sandbox app id (public identifier). |
 | `PAYPAL_CLIENT_SECRET` | Sandbox secret. Never commit it. |
 | `PAYPAL_WEBHOOK_ID` | Optional. Turns on PayPal signature checks. |
 | `TWILIO_ACCOUNT_SID` | Twilio account. All three Twilio vars are required for live calls and SMS. |
@@ -216,17 +243,11 @@ A live PayPal login will not complete a sandbox order. This integration is PayPa
 
 ## TCPA
 
-Lou's customer channel is the web chat in the browser. The app does not send SMS, place calls, or answer a phone line. A live text product would need each customer's opt-in consent and a registered 10DLC number. That is not built.
+The shop-board buttons only simulate a call and a text. A configured Twilio number can answer `POST /api/twilio/voice` and send the missed-call text to the number that called. Live SMS registration (10DLC or toll-free verification) is not built. This demo does not register a messaging campaign.
 
 ## Built during the hackathon
 
 I already had a phone-receptionist concept before this hackathon. This chat-to-PayPal-deposit app, including the code, the pricing guard, the PayPal flow, and the shop board, was built new during the hackathon window.
-
-## Built vs not built yet
-
-Built: web chat, price-list quotes, phone script and missed-call text (live Twilio or the shop-board simulator), one lead per phone number, owner summary, requested times stored in this app, PayPal sandbox deposit, activity panel.
-
-Not built: a confirmed calendar booking. Texting and calling are live only when the three Twilio env vars are set. Otherwise they are simulated and no SMS leaves the server.
 
 ## What still needs the secrets
 
