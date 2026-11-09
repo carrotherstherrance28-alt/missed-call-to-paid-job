@@ -34,7 +34,7 @@ test("mock chat quotes the list, creates one deposit, and marks it paid on retur
     assert.equal(health.llm, "mock");
     assert.equal(health.paypal, "mock");
     assert.equal(health.business, "Thurr Solutions");
-    assert.equal(health.twilio, "mock");
+    assert.equal(health.twilio, "simulated");
 
     const { first, second, third } = await book(base, "My gate latch is broken");
     assert.match(first.body.messages[0].content, /\$175\.00/);

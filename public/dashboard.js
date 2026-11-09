@@ -161,7 +161,7 @@ async function customers() {
 function renderCustomers(payload) {
   const mode = document.querySelector("#phone-mode");
   if (mode) {
-    mode.textContent = payload.twilio === "live"
+    mode.textContent = payload.twilio === "configured"
       ? "Twilio is configured. Inbound calls hit /api/twilio/voice. Signature checks are on."
       : "Twilio is not configured. These buttons only simulate the call and the text. No SMS is sent.";
   }
