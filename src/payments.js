@@ -1,3 +1,10 @@
+import { formatUSD } from "./money.js";
+
+export function paidDepositLine(depositAmount, requestedTime) {
+  const when = requestedTime || "none";
+  return `Deposit ${formatUSD(depositAmount)} paid · requested time: ${when} (owner to confirm)`;
+}
+
 export function presentJob(job) {
   return {
     id: job.id,
@@ -24,6 +31,7 @@ export function presentJob(job) {
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
     paidAt: job.paidAt,
+    paidLine: job.paymentStatus === "paid" ? paidDepositLine(job.depositAmount, job.slotLabel) : "",
   };
 }
 

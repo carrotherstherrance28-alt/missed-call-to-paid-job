@@ -10,6 +10,14 @@ The shop board shows the quote, the requested time, and whether the deposit is p
 
 I built this during the PayPal AI Hackathon. I am Therrance Carrothers, Thurr Solutions LLC, St. Louis. The shop is not a real business. Lou does not text or call anyone. [MIT License](LICENSE).
 
+## Deposit status
+
+Lou can call `check_deposit_status`. That tool only reads the PayPal sandbox order (`get_order` on the agent toolkit, or Orders v2 GET on the test client). If the capture is complete, Lou says the deposit is in. Otherwise she says it is still pending. The tool does not change the amount.
+
+## Demo seed
+
+On boot, Lou writes the Thurr Solutions price list if it is missing, plus one pending job and one paid job (`job_seed_pending`, `job_seed_paid`). Running it again does not add duplicates. Set `SEED_DEMO=false` to skip that. Tests do.
+
 ## Phone and missed-call text
 
 Lou answers `POST /api/twilio/voice` with TwiML. The script greets the caller as Lou at Thurr Solutions, then asks for the job, name, address or area, urgency, and a requested time. The spoken price is a range from `config/quote-ranges.json`. If the job is not on that card, Lou does not guess a number. Lou then says a link is being texted.
@@ -173,7 +181,7 @@ To receive webhooks, register `https://YOUR_SERVICE/api/paypal/webhook` on the s
 | `TWILIO_AUTH_TOKEN` | Used to send SMS and to check `X-Twilio-Signature`. Secret. |
 | `TWILIO_PHONE_NUMBER` | The Twilio number that answers and texts. Lou does not buy numbers. |
 | `OWNER_WEBHOOK_URL` | Optional. Lou POSTs the owner summary here. |
-| `OWNER_EMAIL` | Optional label stored with the summary. Mail is not sent unless a webhook does it. |
+| `SEED_DEMO` | Default on. Set `false` to skip the seeded shop, price list, and sample jobs. |
 | `PAYPAL_ALLOW_LIVE` | Leave unset. |
 | `CHAT_RATE_LIMIT_MAX` | Default `30` chat posts per window per IP. |
 | `CHAT_RATE_LIMIT_WINDOW_MS` | Default `600000` (10 minutes). |

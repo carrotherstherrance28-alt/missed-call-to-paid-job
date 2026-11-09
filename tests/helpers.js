@@ -13,6 +13,7 @@ export function tempFile(name = "lou.json") {
 
 export function testConfig(env = {}) {
   return loadConfig({
+    SEED_DEMO: "false",
     MOCK_MODE: "true",
     DATA_FILE: tempFile(),
     LLM_API_KEY: "",

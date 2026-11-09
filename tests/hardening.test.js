@@ -199,7 +199,7 @@ test("a 429 from the model is retried once, then explained", async () => {
         messages: [{ role: "user", content: "hi" }],
         tools: toolDefinitions,
       }),
-      /rate limit/,
+      /busy, please retry/,
     );
     assert.equal(hits, 2);
   } finally {

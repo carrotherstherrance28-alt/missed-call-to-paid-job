@@ -3,6 +3,10 @@ import { computeQuote } from "./pricing.js";
 import { formatUSD } from "./money.js";
 import { extractContact } from "./people.js";
 
+export function asksAboutDeposit(text) {
+  return /\b(deposit in|deposit paid|is it paid|did it go through|already paid|payment status)\b/i.test(text);
+}
+
 export function isPriceChallenge(text) {
   return /\$\s*1\b/i.test(text) || /\b(make it|change it to|only|for)\s+\$?\s*1\b/i.test(text);
 }
@@ -184,7 +188,8 @@ function toSpanish(text) {
     .replaceAll("I won't invent a price.", "No invento un precio.")
     .replaceAll("I did not quote a price.", "No di un precio.")
     .replaceAll("Deposit due:", "El depósito es:")
-    .replaceAll("Which time should I request?", "¿Qué horario pido?");
+    .replaceAll("Your deposit is in.", "Tu depósito ya entró.")
+    .replaceAll("is still pending.", "sigue pendiente.");
 }
 
 export function mockComplete(messages, { language = "en" } = {}) {
@@ -195,6 +200,12 @@ export function mockComplete(messages, { language = "en" } = {}) {
   const contact = extractContact(all);
 
   const existing = latestTool(messages, "create_job_and_deposit");
+  if (asksAboutDeposit(latest)) {
+    if (!calledThisTurn(messages, "check_deposit_status")) return toolCall("check_deposit_status", {});
+    const status = latestTool(messages, "check_deposit_status");
+    if (status?.message) return voice(status.message);
+    return voice(status?.error || "Your deposit is still pending.");
+  }
   if (existing?.ok && isPriceChallenge(latest)) {
     return voice(`I won't change that deposit. It stays ${formatUSD(existing.depositAmount)} because the server prices it from the list.`);
   }

@@ -62,7 +62,7 @@ export function advanceCall(call, speech, ranges) {
   return { call: next, say: PROMPTS[next.step], done: false };
 }
 
-export async function rememberCall(store, call, event) {
+export async function rememberCall(store, call, event, { simulated = false } = {}) {
   const customer = await upsertCustomer(store, {
     phone: call.from,
     name: call.name,
@@ -71,6 +71,7 @@ export async function rememberCall(store, call, event) {
     urgency: call.urgency,
     requestedTime: call.requestedTime,
     quoteRange: call.quoteRange,
+    simulated,
     event,
   });
   call.customerId = customer.id;
@@ -81,7 +82,7 @@ export async function rememberCall(store, call, event) {
   return customer;
 }
 
-export async function textCustomer({ config, store, call, baseUrl, missed, fetchImpl, forceMock = false }) {
+export async function textCustomer({ config, store, call, baseUrl, missed, fetchImpl, forceMock = false, simulated = false }) {
   if (call.texted && call.customerId) {
     const existing = (store.read().customers || []).find((entry) => entry.id === call.customerId);
     return { customer: existing, sms: null };
@@ -91,13 +92,14 @@ export async function textCustomer({ config, store, call, baseUrl, missed, fetch
       kind: "call",
       summary: missed ? "Missed call" : "Lou answered",
       detail: call.job || "",
-    });
+    }, { simulated });
   }
   const body = smsBody({ baseUrl, leadId: call.customerId, missed });
   const sms = await sendTwilioSms({ config, to: call.from, body, fetchImpl, forceMock });
   call.texted = true;
   const updated = await upsertCustomer(store, {
     phone: call.from,
+    simulated,
     event: {
       kind: "sms",
       summary: missed ? "Missed-call text" : "Text with deposit link",

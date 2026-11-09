@@ -1,3 +1,4 @@
+import { paidDepositLine } from "./payments.js";
 import { phoneDigits, formatPhone } from "./people.js";
 import { nid } from "./ids.js";
 
@@ -49,6 +50,8 @@ export async function upsertCustomer(store, patch) {
         paymentStatus: "none",
         jobId: null,
         conversationId: null,
+        simulated: false,
+        seeded: false,
         timeline: [],
         createdAt: now,
         updatedAt: now,
@@ -58,6 +61,7 @@ export async function upsertCustomer(store, patch) {
     for (const key of ["name", "email", "address", "job", "urgency", "requestedTime", "quoteRange", "paymentStatus", "jobId", "conversationId"]) {
       if (patch[key]) customer[key] = patch[key];
     }
+    if (patch.simulated === true) customer.simulated = true;
     if (patch.event) customer.timeline.push({ at: now, ...patch.event });
     customer.updatedAt = now;
     customer.ownerSummary = ownerSummary(customer);
@@ -67,7 +71,25 @@ export async function upsertCustomer(store, patch) {
 }
 
 export function listCustomers(store) {
-  return (store.read().customers || []).slice().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).map(presentCustomer);
+  const state = store.read();
+  return (state.customers || [])
+    .slice()
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .map((customer) => {
+      const job = customer.jobId ? state.jobs.find((entry) => entry.id === customer.jobId) : null;
+      const view = { ...customer };
+      if (job) {
+        view.paymentStatus = job.paymentStatus;
+        view.depositAmount = job.depositAmount;
+        if (!view.requestedTime) view.requestedTime = job.slotLabel;
+      }
+      const presented = presentCustomer(view);
+      presented.paidLine = presented.paymentStatus === "paid"
+        ? paidDepositLine(view.depositAmount, view.requestedTime)
+        : "";
+      presented.simulated = Boolean(customer.simulated);
+      return presented;
+    });
 }
 
 export async function notifyOwner(config, customer, fetchImpl = fetch) {

@@ -68,6 +68,7 @@ function render(jobs) {
       fact("Order status", job.paypalOrderStatus || job.paymentStatus),
     );
     card.append(header, meta);
+    if (job.paymentStatus === "paid" && job.paidLine) card.append(el("p", null, job.paidLine));
     if (job.paymentNote) card.append(el("p", "note", job.paymentNote));
     card.append(el("p", "fine", job.checkoutMode === "mock"
       ? "Offline mock order. No sandbox call was made."
@@ -174,7 +175,10 @@ function renderCustomers(payload) {
   for (const customer of rows) {
     const card = el("article", "job");
     card.append(el("h2", null, customer.name || customer.phone));
-    card.append(el("p", "fine", `${customer.phone} · payment ${customer.paymentStatus}`));
+    if (customer.paymentStatus === "paid" && customer.paidLine) {
+      card.append(el("p", null, customer.paidLine));
+    }
+    if (customer.simulated) card.append(el("span", "badge", "Simulated"));
     if (customer.requestedTime) card.append(el("p", null, `Requested time: ${customer.requestedTime}`));
     if (customer.quoteRange) {
       card.append(el("p", null, `Quote range: $${customer.quoteRange.low}–$${customer.quoteRange.high}`));

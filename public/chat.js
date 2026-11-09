@@ -122,7 +122,7 @@ async function send(text) {
     const data = await res.json();
     pending.remove();
     if (!res.ok) {
-      addBubble("lou", data.error || "Lou could not answer.");
+      addBubble("lou", data.error || "Lou is busy, please retry.");
       messageEl.value = message;
       return;
     }
@@ -133,7 +133,7 @@ async function send(text) {
     watchPayments();
   } catch (err) {
     pending.remove();
-    addBubble("lou", "The chat request failed. Nothing was saved.");
+    addBubble("lou", "Lou is busy, please retry.");
     messageEl.value = message;
   } finally {
     busy = false;

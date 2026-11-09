@@ -413,8 +413,8 @@ test("the OpenAI-compatible client sends tools and posts tool results back", asy
     assert.equal(seen[0].body.messages[0].role, "system");
     assert.equal(seen[1].body.messages.at(-1).role, "tool");
     assert.equal(seen[1].body.messages.at(-1).name, "get_price_list");
-    assert.equal(toolDefinitions.length, 4);
-    assert.ok(toolDefinitions.some((tool) => tool.function.name === "save_followup"));
+    assert.equal(toolDefinitions.length, 5);
+    assert.ok(toolDefinitions.some((tool) => tool.function.name === "check_deposit_status"));
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
