@@ -282,7 +282,18 @@ textarea::placeholder { color: #5c564c; }
   border-radius: 14px;
   padding: 12px;
 }
-pre.fine { white-space: pre-wrap; }
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #3d2a12;
+  color: #fff6e8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 .job {
   background: var(--card);
   border: 1px solid var(--line);

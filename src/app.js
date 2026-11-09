@@ -17,6 +17,7 @@ import { paymentCard, presentJob, syncJobPayment } from "./payments.js";
 import { validatePriceList } from "./pricing.js";
 import { buildSlots } from "./slots.js";
 import { createStore } from "./store.js";
+import { seedDemo } from "./seed.js";
 import { createToolHandlers } from "./tools.js";
 import {
   bannerMarkup,
@@ -78,6 +79,7 @@ export function createChatLimiter() {
 
 export function createApp(config) {
   const store = createStore(config.dataFile);
+  const seeded = config.seedDemo === false ? Promise.resolve() : seedDemo(store);
   const allowChat = createChatLimiter();
   const onActivity = (entry) => store.addActivity({ id: nid("act"), at: new Date().toISOString(), ...entry });
   let paypal;
@@ -100,6 +102,9 @@ export function createApp(config) {
   app.disable("x-powered-by");
   app.use(express.json({ limit: "100kb" }));
   app.use(express.urlencoded({ extended: false }));
+  app.use((req, res, next) => {
+    seeded.then(() => next()).catch(next);
+  });
 
   app.get("/api/health", (_req, res) => {
     const mode = describeMode(config);
@@ -175,7 +180,7 @@ export function createApp(config) {
         kind: "call",
         summary: step.done ? "Lou finished the call" : `Lou asked for ${step.call.step}`,
         detail: String(req.body?.speech || ""),
-      });
+      }, { simulated: true });
       let sms = null;
       if (step.done) {
         const sent = await textCustomer({
@@ -186,6 +191,7 @@ export function createApp(config) {
           missed: false,
           fetchImpl: config.fetchImpl || fetch,
           forceMock: true,
+          simulated: true,
         });
         sms = sent.sms;
       }
@@ -212,6 +218,7 @@ export function createApp(config) {
         missed: true,
         fetchImpl: config.fetchImpl || fetch,
         forceMock: true,
+        simulated: true,
       });
       res.json({
         say: "Missed call. Lou prepared a text with the deposit link.",

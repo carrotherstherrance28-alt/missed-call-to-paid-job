@@ -1,6 +1,7 @@
 import { assertPublicReturnBase } from "./config.js";
 import { upsertCustomer } from "./customers.js";
 import { nid } from "./ids.js";
+import { formatUSD } from "./money.js";
 import { assertContact, formatPhone, phoneDigits } from "./people.js";
 import { computeQuote } from "./pricing.js";
 import { findSlot, SLOT_NOTE } from "./slots.js";
@@ -190,6 +191,54 @@ export function createToolHandlers({ store, paypal, baseUrl, conversationId }) {
         customerName: lead.customerName,
         phone: lead.phone,
         note: "Saved for the owner. No price and no PayPal order.",
+      };
+    },
+    async check_deposit_status() {
+      const conversation = store.getConversation(conversationId);
+      const job = conversation?.jobId ? store.getJob(conversation.jobId) : null;
+      if (!job) {
+        return { ok: false, readOnly: true, error: "No deposit has been created for this chat yet." };
+      }
+      const before = job.depositAmount;
+      let paymentStatus = job.paymentStatus;
+      let paypalOrderStatus = job.paypalOrderStatus;
+      if (job.paypalOrderId) {
+        try {
+          const order = await paypal.getOrder(job.paypalOrderId);
+          const paid = order.paid === true;
+          paymentStatus = paid ? "paid" : "pending";
+          paypalOrderStatus = order.status;
+          await store.updateJob(job.id, {
+            paymentStatus,
+            paypalOrderStatus: order.status,
+            captureId: order.captureId || job.captureId,
+            paidAt: paid ? job.paidAt || new Date().toISOString() : null,
+          });
+        } catch (err) {
+          return {
+            ok: true,
+            readOnly: true,
+            paymentStatus: job.paymentStatus,
+            depositAmount: before,
+            message: `Your deposit of ${formatUSD(before)} is still pending.`,
+            note: err.message,
+          };
+        }
+      }
+      const after = store.getJob(job.id);
+      if (after.depositAmount !== before) {
+        throw new Error("Deposit check must not change the amount.");
+      }
+      const message = paymentStatus === "paid"
+        ? `Your deposit is in. ${formatUSD(before)} is paid on the PayPal sandbox.`
+        : `Your deposit of ${formatUSD(before)} is still pending.`;
+      return {
+        ok: true,
+        readOnly: true,
+        paymentStatus,
+        paypalOrderStatus,
+        depositAmount: before,
+        message,
       };
     },
     async list_open_slots() {

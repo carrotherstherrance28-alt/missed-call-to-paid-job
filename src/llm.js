@@ -114,7 +114,7 @@ export async function liveComplete({ config, messages, tools, fetchImpl = fetch 
       res = await send();
     }
   } catch (err) {
-    const error = new Error("The language model took too long to reply. Send that again. Nothing was saved.");
+    const error = new Error("Lou is busy, please retry.");
     error.status = 502;
     error.cause = err;
     throw error;
@@ -129,18 +129,14 @@ export async function liveComplete({ config, messages, tools, fetchImpl = fetch 
   }
 
   if (res.status === 429) {
-    const error = new Error("Lou hit a rate limit on the language model. Wait a few seconds and send that again. Nothing was saved.");
+    const error = new Error("Lou is busy, please retry.");
     error.status = 429;
     throw error;
   }
 
   if (!res.ok) {
     const safe = providerText(body).replaceAll(config.llm.apiKey, "[redacted]").slice(0, 240);
-    const error = new Error(
-      /thought_signature/i.test(safe)
-        ? "The model needs a new chat before it can use tools again. Click New chat and try once more. Nothing was saved."
-        : `The language model request failed (${res.status}). Check LLM_API_KEY, LLM_BASE_URL, and LLM_MODEL.${safe ? ` ${safe}` : ""}`,
-    );
+    const error = new Error(`Lou is busy, please retry. ${safe ? safe.slice(0, 120) : ""}`.trim());
     error.status = 502;
     throw error;
   }

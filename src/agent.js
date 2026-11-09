@@ -37,6 +37,15 @@ export const toolDefinitions = [
   {
     type: "function",
     function: {
+      name: "check_deposit_status",
+      description:
+        "Read the PayPal sandbox order for this chat. Does not create a charge and does not change the amount. Say the message it returns.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_job_and_deposit",
       description:
         "Create the job and a PayPal deposit checkout after the customer has agreed to a price-list quote and one slot. Pass item ids and quantities only. The server computes the deposit. The approvalUrl in the result is the only payment link you may share.",
@@ -80,7 +89,7 @@ export function buildSystemPrompt(priceList, language = "en") {
     "Call list_open_slots before you offer times. Those are requested times stored by this demo. Never say you checked a real calendar.",
     "Collect the customer's full name, mobile phone, email, and street address or area before create_job_and_deposit.",
     "Call create_job_and_deposit only after they agree to the quote and one slot id from the tool. Pass item ids and quantities only.",
-    "The approvalUrl returned by the tool is the only payment link you may give. Never invent a PayPal URL.",
+    "Call check_deposit_status when they ask if the deposit is paid. Repeat its message. Never change the amount.",
     "If checkoutMode is mock, say the link is an offline mock checkout and no money moves. If checkoutMode is live, say it is PayPal sandbox and no real charge.",
     "If a tool returns an error, explain it in plain language. Do not pretend the payment exists.",
     "Be brief and plain-spoken.",

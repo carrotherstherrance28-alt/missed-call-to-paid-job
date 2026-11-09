@@ -70,6 +70,7 @@ export function loadConfig(env = process.env) {
     },
     ownerWebhookUrl: String(env.OWNER_WEBHOOK_URL || "").trim(),
     ownerEmail: String(env.OWNER_EMAIL || "").trim(),
+    seedDemo: env.SEED_DEMO !== "false",
   };
 }
 
