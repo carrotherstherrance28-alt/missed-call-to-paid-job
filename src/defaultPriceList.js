@@ -1,6 +1,6 @@
 export const defaultPriceList = {
   business: {
-    name: "Gateway Mobile Welding (demo)",
+    name: "Thurr Solutions",
     city: "St. Louis, MO",
     phone: "(314) 555-0198",
     email: "owner-demo@example.com",
@@ -8,7 +8,7 @@ export const defaultPriceList = {
     depositPercent: 50,
     demo: true,
     disclaimer:
-      "Made-up shop for a hackathon demo. Not a real business. Web chat only — no SMS and no phone calls.",
+      "Demo for Thurr Solutions. PayPal stays on the sandbox. Phone and SMS run through Twilio only when those env vars are set; otherwise the shop board simulates them.",
   },
   items: [
     {

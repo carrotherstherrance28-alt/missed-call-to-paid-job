@@ -34,7 +34,7 @@ function shell({ title, body, banner = "" }) {
   ${banner}
   <main class="wrap narrow">${body}</main>
   <footer class="site-foot">
-    <p>Gateway Mobile Welding is a made-up shop. Lou uses web chat only and does not text or call anyone. Payments stay on the PayPal sandbox, or the offline mock when no keys are set. Requested times are not a calendar sync.</p>
+    <p>Thurr Solutions demo. Lou answers a Twilio call and texts a link when those env vars are set. Otherwise the shop board simulates the call. Payments stay on the PayPal sandbox, or the offline mock when PayPal keys are missing. A requested time is not a confirmed booking.</p>
     <p>MIT License · Therrance Carrothers · Thurr Solutions LLC · St. Louis</p>
   </footer>
 </body>

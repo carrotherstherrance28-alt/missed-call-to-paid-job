@@ -33,6 +33,21 @@
       <button class="button" id="refresh-all" type="button">Refresh payment status</button>
       <a class="button ghost" href="/">Open the chat</a>
     </div>
+    <h2 id="customers-heading">Customers</h2>
+    <p class="fine">Calls, texts, and chats for the same phone number share one lead. A requested time is not a confirmed booking. Payment status is the PayPal sandbox deposit, or the offline mock.</p>
+    <section class="panel stack" id="phone-demo">
+      <h3>Phone demo</h3>
+      <p class="fine" id="phone-mode"></p>
+      <div class="row-actions">
+        <button class="button" id="sim-call" type="button">Simulate an inbound call</button>
+        <button class="button ghost" id="sim-missed" type="button">Simulate a missed call</button>
+      </div>
+      <label>What the caller says
+        <input id="caller-speech" type="text" value="My gate latch is broken">
+      </label>
+      <p id="lou-says" class="lede"></p>
+    </section>
+    <div id="customers" class="board" aria-labelledby="customers-heading"></div>
     <div id="board" class="board"></div>
     <h2 id="followups-heading">Owner follow-ups</h2>
     <p class="fine">Jobs that are not on the price list. Lou does not quote these. The owner gets a name and number.</p>
@@ -42,7 +57,7 @@
     <div id="activity" class="activity" aria-labelledby="activity-heading"></div>
   </main>
   <footer class="site-foot">
-    <p>Gateway Mobile Welding is a made-up shop. Lou uses web chat only and does not text or call anyone. Payments stay on the PayPal sandbox, or the offline mock when no keys are set. Requested times are not a calendar sync.</p>
+    <p>Thurr Solutions demo. Lou answers a Twilio call and texts a link when those env vars are set. Otherwise this board simulates the call. Payments stay on the PayPal sandbox, or the offline mock when PayPal keys are missing. A requested time is not a confirmed booking.</p>
     <p>MIT License · Therrance Carrothers · Thurr Solutions LLC · St. Louis</p>
   </footer>
   <script type="module" src="/dashboard.js"></script>

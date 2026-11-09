@@ -10,6 +10,9 @@ import { liveComplete } from "./llm.js";
 import { mockComplete } from "./mockAgent.js";
 import { orderIdFromWebhook, createLivePaypal, createMockPaypal } from "./paypal.js";
 import { createToolkitPaypal, sandboxUsesToolkit } from "./paypalToolkit.js";
+import { listCustomers, presentCustomer, upsertCustomer } from "./customers.js";
+import { loadQuoteRanges, sayTwiml, validTwilioSignature } from "./twilio.js";
+import { advanceCall, freshCall, openingLine, rememberCall, textCustomer } from "./voice.js";
 import { paymentCard, presentJob, syncJobPayment } from "./payments.js";
 import { validatePriceList } from "./pricing.js";
 import { buildSlots } from "./slots.js";
@@ -41,9 +44,12 @@ function displayMessages(conversation, job) {
 
 function sendPage(res, fileName, config) {
   const mode = describeMode(config);
+  const phone = config.twilio.live
+    ? ""
+    : bannerMarkup("Phone and SMS are simulated on the shop board until TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER are set.");
   const html = fs
     .readFileSync(path.join(publicDir, fileName), "utf8")
-    .replace("<!--MODE_BANNER-->", bannerMarkup(mode.banner));
+    .replace("<!--MODE_BANNER-->", bannerMarkup(mode.banner) + phone);
   res.type("html").send(html);
 }
 
@@ -111,6 +117,7 @@ export function createApp(config) {
       paypalVia: config.mockPaypal ? "mock" : paypal.via || "orders-v2",
       publicBaseUrl: config.publicBaseUrl || "",
       webhook: config.paypal.webhookId ? "verified" : "off",
+      twilio: config.twilio.live ? "live" : "mock",
       missing: mode.missing,
       banner: mode.banner,
     });
@@ -151,6 +158,161 @@ export function createApp(config) {
       note: "Requested times stored by this demo. Not a calendar sync.",
       slots: buildSlots(new Date(), store.read().bookedSlotIds),
     });
+  });
+
+  app.get("/api/customers", (_req, res) => {
+    res.json({ twilio: config.twilio.live ? "live" : "mock", customers: listCustomers(store) });
+  });
+
+  app.post("/api/mock/call", async (req, res, next) => {
+    try {
+      const from = String(req.body?.from || "3145550148");
+      const ranges = loadQuoteRanges();
+      let call = req.body?.callId ? store.read().calls?.[req.body.callId] : null;
+      if (!call) call = freshCall(from);
+      const step = advanceCall(call, String(req.body?.speech || ""), ranges);
+      await rememberCall(store, step.call, {
+        kind: "call",
+        summary: step.done ? "Lou finished the call" : `Lou asked for ${step.call.step}`,
+        detail: String(req.body?.speech || ""),
+      });
+      let sms = null;
+      if (step.done) {
+        const sent = await textCustomer({
+          config,
+          store,
+          call: step.call,
+          baseUrl: requestBase(req, config),
+          missed: false,
+          fetchImpl: config.fetchImpl || fetch,
+          forceMock: true,
+        });
+        sms = sent.sms;
+      }
+      res.json({
+        callId: step.call.id,
+        say: step.say,
+        done: step.done,
+        sms,
+        customerId: step.call.customerId,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post("/api/mock/missed", async (req, res, next) => {
+    try {
+      const call = freshCall(String(req.body?.from || "3145550148"));
+      const sent = await textCustomer({
+        config,
+        store,
+        call,
+        baseUrl: requestBase(req, config),
+        missed: true,
+        fetchImpl: config.fetchImpl || fetch,
+        forceMock: true,
+      });
+      res.json({
+        say: "Missed call. Lou prepared a text with the deposit link.",
+        customer: presentCustomer(sent.customer),
+        sms: sent.sms,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  function twilioUrl(req) {
+    return `${requestBase(req, config)}${req.originalUrl}`;
+  }
+
+  function twilioParams(body) {
+    const params = {};
+    for (const [key, value] of Object.entries(body || {})) {
+      if (typeof value === "string") params[key] = value;
+    }
+    return params;
+  }
+
+  function requireTwilio(req, res) {
+    if (!config.twilio.live) {
+      res.status(403).type("text/plain").send("Twilio is not configured. Use the shop board phone demo.");
+      return false;
+    }
+    const ok = validTwilioSignature({
+      authToken: config.twilio.authToken,
+      signature: req.get("x-twilio-signature") || "",
+      url: twilioUrl(req),
+      params: twilioParams(req.body),
+    });
+    if (!ok) {
+      res.status(403).type("text/plain").send("Invalid Twilio signature.");
+      return false;
+    }
+    return true;
+  }
+
+  app.post("/api/twilio/voice", async (req, res, next) => {
+    try {
+      if (!requireTwilio(req, res)) return;
+      const call = freshCall(req.body.From || "");
+      await rememberCall(store, call, { kind: "call", summary: "Inbound call", detail: req.body.CallSid || "" });
+      const gatherUrl = `${requestBase(req, config)}/api/twilio/voice/gather?call=${encodeURIComponent(call.id)}`;
+      res.type("text/xml").send(sayTwiml(openingLine, { gatherUrl }));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post("/api/twilio/voice/gather", async (req, res, next) => {
+    try {
+      if (!requireTwilio(req, res)) return;
+      const call = store.read().calls?.[req.query.call];
+      if (!call) {
+        res.type("text/xml").send(sayTwiml("I lost that call. I will text you a link."));
+        return;
+      }
+      const step = advanceCall(call, req.body.SpeechResult || "", loadQuoteRanges());
+      await rememberCall(store, step.call, { kind: "call", summary: step.call.step, detail: req.body.SpeechResult || "" });
+      if (step.done) {
+        await textCustomer({
+          config,
+          store,
+          call: step.call,
+          baseUrl: requestBase(req, config),
+          missed: false,
+          fetchImpl: config.fetchImpl || fetch,
+        });
+        res.type("text/xml").send(sayTwiml(step.say));
+        return;
+      }
+      const gatherUrl = `${requestBase(req, config)}/api/twilio/voice/gather?call=${encodeURIComponent(step.call.id)}`;
+      res.type("text/xml").send(sayTwiml(step.say, { gatherUrl }));
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.post("/api/twilio/voice/status", async (req, res, next) => {
+    try {
+      if (!requireTwilio(req, res)) return;
+      const status = String(req.body.CallStatus || "");
+      if (["no-answer", "busy", "failed", "canceled"].includes(status) && req.body.From) {
+        const call = freshCall(req.body.From);
+        await textCustomer({
+          config,
+          store,
+          call,
+          baseUrl: requestBase(req, config),
+          missed: true,
+          fetchImpl: config.fetchImpl || fetch,
+        });
+      }
+      res.type("text/xml").send("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>");
+    } catch (err) {
+      next(err);
+    }
   });
 
   app.get("/api/jobs", async (req, res, next) => {
@@ -227,6 +389,13 @@ export function createApp(config) {
         return res.status(400).json({ error: "This chat is full. Start a new one." });
       }
 
+      const language = req.body?.language === "es" ? "es" : "en";
+      await store.change((draft) => {
+        const row = draft.conversations.find((entry) => entry.id === conversation.id);
+        if (row) row.language = language;
+      });
+      conversation = store.getConversation(conversation.id);
+
       const baseUrl = requestBase(req, config);
       const handlers = createToolHandlers({
         store,
@@ -235,13 +404,13 @@ export function createApp(config) {
         conversationId: conversation.id,
       });
       const complete = config.mockLlm
-        ? (messages) => mockComplete(messages)
+        ? (messages) => mockComplete(messages, { language })
         : (messages, tools) => liveComplete({ config, messages, tools, fetchImpl: config.fetchImpl || fetch });
 
       const result = await runAgentTurn({
         history: conversation.messages,
         userMessage: message,
-        systemPrompt: buildSystemPrompt(store.getPriceList()),
+        systemPrompt: buildSystemPrompt(store.getPriceList(), language),
         complete,
         toolHandlers: handlers,
       });

@@ -67,11 +67,11 @@ export const toolDefinitions = [
   },
 ];
 
-export function buildSystemPrompt(priceList) {
+export function buildSystemPrompt(priceList, language = "en") {
   const business = priceList.business;
   return [
-    `You are Lou, the receptionist for ${business.name}, a made-up mobile welding shop in ${business.city}.`,
-    "You reply in a web chat. You do not answer phone calls, send SMS, or book a calendar.",
+    `You are Lou, the receptionist for ${business.name} in ${business.city}.`,
+    "You reply in web chat. On a phone call, a separate Twilio script speaks. You do not invent prices.",
     "Call get_price_list before you quote. Quote only names and prices from that tool. Never invent a service, fee, discount, or price.",
     "If the customer asks to change a price, including to $1, refuse. The server prices the PayPal order from the list.",
     "If nothing on the list fits, say so, do not invent a price, and call save_followup once you have their name and phone. Tell them: That one needs the owner to look at it. Leave your name and number and he'll follow up.",
@@ -86,7 +86,8 @@ export function buildSystemPrompt(priceList) {
     "Be brief and plain-spoken.",
     `Service area: ${business.serviceArea}. The shop phone on the website is ${business.phone}. You still do not text or call anyone.`,
     business.disclaimer,
-  ].join("\n");
+    language === "es" ? "Reply in Spanish. Keep the dollar amounts in USD." : "",
+  ].filter(Boolean).join("\n");
 }
 
 function parseArgs(raw) {

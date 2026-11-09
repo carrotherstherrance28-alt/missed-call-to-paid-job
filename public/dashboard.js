@@ -145,6 +145,80 @@ async function loadSide() {
   renderActivity(await activityRes.json());
 }
 
-document.querySelector("#refresh-all").addEventListener("click", () => load(true).then(loadSide));
-load(true).then(loadSide);
-setInterval(() => load(true).then(loadSide), 15000);
+document.querySelector("#refresh-all").addEventListener("click", () => load(true).then(loadSide).then(loadCustomers));
+load(true).then(loadSide).then(loadCustomers);
+setInterval(() => load(true).then(loadSide).then(loadCustomers), 15000);
+
+let simCallId = null;
+const louSays = document.querySelector("#lou-says");
+
+async function customers() {
+  const res = await fetch("/api/customers");
+  return res.json();
+}
+
+function renderCustomers(payload) {
+  const mode = document.querySelector("#phone-mode");
+  if (mode) {
+    mode.textContent = payload.twilio === "live"
+      ? "Twilio is configured. Inbound calls hit /api/twilio/voice. Signature checks are on."
+      : "Twilio is not configured. These buttons only simulate the call and the text. No SMS is sent.";
+  }
+  const root = document.querySelector("#customers");
+  root.replaceChildren();
+  const rows = payload.customers || [];
+  if (!rows.length) {
+    root.append(el("p", "fine", "No customers yet."));
+    return;
+  }
+  for (const customer of rows) {
+    const card = el("article", "job");
+    card.append(el("h2", null, customer.name || customer.phone));
+    card.append(el("p", "fine", `${customer.phone} · payment ${customer.paymentStatus}`));
+    if (customer.requestedTime) card.append(el("p", null, `Requested time: ${customer.requestedTime}`));
+    if (customer.quoteRange) {
+      card.append(el("p", null, `Quote range: $${customer.quoteRange.low}–$${customer.quoteRange.high}`));
+    }
+    const list = el("ol");
+    for (const event of customer.timeline || []) {
+      list.append(el("li", null, `${event.kind}: ${event.summary}`));
+    }
+    card.append(list);
+    card.append(el("pre", "fine", customer.ownerSummary));
+    if (customer.id) {
+      const link = el("a", "button ghost", "Open the text-back chat");
+      link.href = `/?lead=${encodeURIComponent(customer.id)}`;
+      card.append(link);
+    }
+    root.append(card);
+  }
+}
+
+async function loadCustomers() {
+  renderCustomers(await customers());
+}
+
+document.querySelector("#sim-call").addEventListener("click", async () => {
+  const speech = document.querySelector("#caller-speech").value;
+  const res = await fetch("/api/mock/call", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ from: "3145550148", speech, callId: simCallId }),
+  });
+  const data = await res.json();
+  simCallId = data.callId;
+  louSays.textContent = data.say || data.error;
+  if (data.done) simCallId = null;
+  await loadCustomers();
+});
+
+document.querySelector("#sim-missed").addEventListener("click", async () => {
+  const res = await fetch("/api/mock/missed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ from: "3145550149" }),
+  });
+  const data = await res.json();
+  louSays.textContent = data.say || data.error;
+  await loadCustomers();
+});

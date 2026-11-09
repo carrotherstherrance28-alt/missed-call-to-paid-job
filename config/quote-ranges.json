@@ -1,0 +1,40 @@
+{
+  "note": "Lou speaks only these ranges on a call. The PayPal deposit still uses the price list, not these ranges.",
+  "ranges": [
+    {
+      "id": "gate-repair",
+      "label": "Gate repair",
+      "keywords": ["gate", "latch", "hinge"],
+      "low": 150,
+      "high": 220
+    },
+    {
+      "id": "railing-section",
+      "label": "Steel railing",
+      "keywords": ["railing", "rail"],
+      "low": 350,
+      "high": 450
+    },
+    {
+      "id": "handrail-repair",
+      "label": "Handrail repair",
+      "keywords": ["handrail", "banister"],
+      "low": 140,
+      "high": 200
+    },
+    {
+      "id": "trailer-hitch",
+      "label": "Trailer hitch install",
+      "keywords": ["hitch", "trailer"],
+      "low": 200,
+      "high": 280
+    },
+    {
+      "id": "mobile-weld-hour",
+      "label": "Mobile welding",
+      "keywords": ["weld", "welding"],
+      "low": 150,
+      "high": 200
+    }
+  ]
+}

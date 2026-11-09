@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lou · Gateway Mobile Welding (demo)</title>
+  <title>Lou · Thurr Solutions</title>
   <meta name="description" content="Lou is an AI receptionist for a made-up St. Louis welding shop. It quotes from the owner's price list, saves a requested time, and sends a PayPal sandbox deposit.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,7 +29,7 @@
     <section class="story">
       <p class="eyebrow">Web chat for a made-up welding shop</p>
       <h1>From “my gate latch is broken” to a PayPal deposit in one chat.</h1>
-      <p class="lede">Lou replies in a web chat for <span data-shop-name>Gateway Mobile Welding (demo)</span>. The model picks the job. The server sets the price from the owner's list and creates the PayPal order, so the agent cannot make up a price.</p>
+      <p class="lede">Lou replies in a web chat for <span data-shop-name>Thurr Solutions</span>. The model picks the job. The server sets the price from the owner's list and creates the PayPal order, so the agent cannot make up a price.</p>
       <ol class="steps" id="steps">
         <li data-step="intake">Ask what the job is</li>
         <li data-step="quote">Quote only the price list</li>
@@ -46,7 +46,7 @@
       <div class="thread-head">
         <p class="kicker">Web chat</p>
         <h2>Lou</h2>
-        <p data-shop-name>Gateway Mobile Welding (demo)</p>
+        <p data-shop-name>Thurr Solutions</p>
       </div>
       <div id="log" class="log" role="log" aria-live="polite"></div>
       <div id="suggestions" class="suggestions"></div>
@@ -56,13 +56,13 @@
         <button type="submit">Send</button>
       </form>
       <div class="composer-tools">
-        <button type="button" id="demo-customer">Insert a fake customer</button>
+        <button type="button" id="lang-toggle">Español</button>
         <button type="button" id="new-chat" class="ghost">New chat</button>
       </div>
     </section>
   </main>
   <footer class="site-foot">
-    <p>Gateway Mobile Welding is a made-up shop. Lou uses web chat only and does not text or call anyone. Payments stay on the PayPal sandbox, or the offline mock when no keys are set. Requested times are not a calendar sync.</p>
+    <p>Thurr Solutions demo. Lou answers a Twilio call and texts a link when those env vars are set. Otherwise this board simulates the call. Payments stay on the PayPal sandbox, or the offline mock when PayPal keys are missing. A requested time is not a confirmed booking.</p>
     <p>MIT License · Therrance Carrothers · Thurr Solutions LLC · St. Louis</p>
   </footer>
   <script type="module" src="/chat.js"></script>

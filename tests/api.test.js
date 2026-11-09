@@ -25,14 +25,16 @@ test("mock chat quotes the list, creates one deposit, and marks it paid on retur
     const home = await fetch(base);
     const html = await home.text();
     assert.match(html, /Offline mock mode/);
-    assert.match(html, /does not text or call/);
+    assert.match(html, /Thurr Solutions/);
+    assert.match(html, /PayPal sandbox/);
     assert.match(html, /not a calendar sync/);
-    assert.match(html, /made-up shop/i);
+    assert.match(html, /made-up welding shop/i);
 
     const health = await (await fetch(`${base}/api/health`)).json();
     assert.equal(health.llm, "mock");
     assert.equal(health.paypal, "mock");
-    assert.equal(health.business, "Gateway Mobile Welding (demo)");
+    assert.equal(health.business, "Thurr Solutions");
+    assert.equal(health.twilio, "mock");
 
     const { first, second, third } = await book(base, "My gate latch is broken");
     assert.match(first.body.messages[0].content, /\$175\.00/);

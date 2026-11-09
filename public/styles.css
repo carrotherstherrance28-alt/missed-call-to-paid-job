@@ -282,7 +282,7 @@ textarea::placeholder { color: #5c564c; }
   border-radius: 14px;
   padding: 12px;
 }
-#log, #board, #price-form { scroll-margin-top: 88px; }
+pre.fine { white-space: pre-wrap; }
 .job {
   background: var(--card);
   border: 1px solid var(--line);

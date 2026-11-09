@@ -4,11 +4,25 @@
 
 From “my gate latch is broken” to a PayPal deposit in one chat.
 
-Lou replies in a web chat for **Gateway Mobile Welding (demo)**, a made-up mobile welding shop in St. Louis. The model picks the job. The server sets the price from the owner's list and creates the PayPal order, so the agent cannot make up a price.
+Lou replies in a web chat for **Thurr Solutions** in St. Louis. The model picks the job. The server sets the price from the owner's list and creates the PayPal sandbox order, so the agent cannot make up a price. When Twilio is configured, Lou also answers the phone and texts a link back. Without those env vars, the shop board simulates the call and the text.
 
 The shop board shows the quote, the requested time, and whether the deposit is pending or paid.
 
 I built this during the PayPal AI Hackathon. I am Therrance Carrothers, Thurr Solutions LLC, St. Louis. The shop is not a real business. Lou does not text or call anyone. [MIT License](LICENSE).
+
+## Phone and missed-call text
+
+Lou answers `POST /api/twilio/voice` with TwiML. The script greets the caller as Lou at Thurr Solutions, then asks for the job, name, address or area, urgency, and a requested time. The spoken price is a range from `config/quote-ranges.json`. If the job is not on that card, Lou does not guess a number. Lou then says a link is being texted.
+
+`POST /api/twilio/voice/status` texts the caller when Twilio reports `no-answer`, `busy`, `failed`, or `canceled`. A finished answered call gets the same kind of text. The text links to `/?lead=` so the web chat and the PayPal sandbox deposit continue on that lead.
+
+Every Twilio webhook checks `X-Twilio-Signature` with `TWILIO_AUTH_TOKEN`. Unsigned requests get 403. Lou does not buy phone numbers.
+
+Set all three of `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` or the phone path stays simulated. On the shop board, **Simulate an inbound call** walks the script, and **Simulate a missed call** stores the text on the lead. Those buttons never call Twilio.
+
+Calls, texts, and web chats for the same phone number share one customer on the board, with a timeline, the payment status, the requested time, and an owner summary. If `OWNER_WEBHOOK_URL` is set, Lou POSTs that summary. Otherwise it stays on the card. `OWNER_EMAIL` is recorded for that hook and is not used to send mail by itself.
+
+The chat has an English / Español toggle. A live model is told to reply in Spanish. In mock mode, the refusal, the off-list line, and the deposit line are Spanish.
 
 ## What it does
 
@@ -154,7 +168,12 @@ To receive webhooks, register `https://YOUR_SERVICE/api/paypal/webhook` on the s
 | `PAYPAL_API_BASE` | Default `https://api-m.sandbox.paypal.com`. |
 | `PAYPAL_CLIENT_ID` | Sandbox client id (public identifier). |
 | `PAYPAL_CLIENT_SECRET` | Sandbox secret. Never commit it. |
-| `PAYPAL_WEBHOOK_ID` | Optional. Turns on signature checks. |
+| `PAYPAL_WEBHOOK_ID` | Optional. Turns on PayPal signature checks. |
+| `TWILIO_ACCOUNT_SID` | Twilio account. All three Twilio vars are required for live calls and SMS. |
+| `TWILIO_AUTH_TOKEN` | Used to send SMS and to check `X-Twilio-Signature`. Secret. |
+| `TWILIO_PHONE_NUMBER` | The Twilio number that answers and texts. Lou does not buy numbers. |
+| `OWNER_WEBHOOK_URL` | Optional. Lou POSTs the owner summary here. |
+| `OWNER_EMAIL` | Optional label stored with the summary. Mail is not sent unless a webhook does it. |
 | `PAYPAL_ALLOW_LIVE` | Leave unset. |
 | `CHAT_RATE_LIMIT_MAX` | Default `30` chat posts per window per IP. |
 | `CHAT_RATE_LIMIT_WINDOW_MS` | Default `600000` (10 minutes). |
@@ -171,6 +190,7 @@ Default list: gate repair **$175**, deposit **50% = $87.50**. Steel railing is *
 6. **Mock:** the button says **Approve deposit (mock checkout)**. Approve it. The return page says the deposit is paid. The activity panel labels those rows as offline mock.
 7. **Sandbox:** the button opens PayPal. Sign in with the sandbox Personal buyer below. Approve the order. PayPal redirects to `/pay/return`, Lou captures it, and the page says paid. The activity panel shows the create and capture with `PayPal-Debug-Id` when PayPal sends one.
 8. Open **Jobs**. The card shows the quote, the time, and **Paid**. If it still says pending, click **Refresh payment status**.
+9. On the same page, **Simulate a missed call** or **Simulate an inbound call**. Those buttons stay on the simulator and do not send an SMS. A signed Twilio webhook is what sends a text, and only when the three Twilio env vars are set.
 
 On **Price list**, change Gate repair from `175` to `200`, save, and start a **New chat**. The next gate quote is **$200.00** and the deposit is **$100.00**. **Restore demo prices** puts the original list back.
 
@@ -196,9 +216,9 @@ I already had a phone-receptionist concept before this hackathon. This chat-to-P
 
 ## Built vs not built yet
 
-Built: web chat, price-list quotes, owner follow-ups for off-list jobs, requested times stored in this app, PayPal sandbox deposit create and capture, activity panel, shop board.
+Built: web chat, price-list quotes, phone script and missed-call text (live Twilio or the shop-board simulator), one lead per phone number, owner summary, requested times stored in this app, PayPal sandbox deposit, activity panel.
 
-Not built: texting, phone answering, calendar booking.
+Not built: a confirmed calendar booking. Texting and calling are live only when the three Twilio env vars are set. Otherwise they are simulated and no SMS leaves the server.
 
 ## What still needs the secrets
 
