@@ -34,6 +34,11 @@ export function loadConfig(env = process.env) {
   if (!mockPaypal && !publicBaseUrl) {
     warnings.push("PUBLIC_BASE_URL is unset. PayPal return URLs use the request host. On Render, RENDER_EXTERNAL_URL covers this when it is set.");
   }
+  const accountSid = String(env.TWILIO_ACCOUNT_SID || "").trim();
+  const authToken = String(env.TWILIO_AUTH_TOKEN || "").trim();
+  const phoneNumber = String(env.TWILIO_PHONE_NUMBER || "").trim();
+  const twilioLive = Boolean(accountSid && authToken && phoneNumber);
+  if (!twilioLive) warnings.push("Twilio is simulated. The shop board can play an inbound call or a missed call.");
 
   return {
     port: Number(env.PORT || 3000),
@@ -57,6 +62,14 @@ export function loadConfig(env = process.env) {
       webhookId: String(env.PAYPAL_WEBHOOK_ID || "").trim(),
       allowLive: env.PAYPAL_ALLOW_LIVE === "true",
     },
+    twilio: {
+      live: twilioLive,
+      accountSid,
+      authToken,
+      phoneNumber,
+    },
+    ownerWebhookUrl: String(env.OWNER_WEBHOOK_URL || "").trim(),
+    ownerEmail: String(env.OWNER_EMAIL || "").trim(),
   };
 }
 

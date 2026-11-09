@@ -1,4 +1,5 @@
 import { assertPublicReturnBase } from "./config.js";
+import { upsertCustomer } from "./customers.js";
 import { nid } from "./ids.js";
 import { assertContact, formatPhone, phoneDigits } from "./people.js";
 import { computeQuote } from "./pricing.js";
@@ -120,6 +121,18 @@ async function createJob({ store, paypal, baseUrl, conversationId, checkoutMode,
       const conversation = draft.conversations.find((entry) => entry.id === conversationId);
       if (conversation) conversation.jobId = job.id;
     });
+    await upsertCustomer(store, {
+      phone: contact.phone,
+      name: contact.name,
+      email: contact.email,
+      address: contact.address,
+      job: summary.slice(0, 200),
+      requestedTime: slot.label,
+      paymentStatus: "pending",
+      jobId: job.id,
+      conversationId,
+      event: { kind: "chat", summary: "Web chat opened a PayPal sandbox deposit", detail: `${job.depositAmount} USD` },
+    }).catch(() => null);
     return presentCreated(job);
   } catch (err) {
     await store.change((draft) => {
@@ -165,6 +178,12 @@ export function createToolHandlers({ store, paypal, baseUrl, conversationId }) {
         createdAt: new Date().toISOString(),
       };
       await store.addLead(lead);
+      await upsertCustomer(store, {
+        phone,
+        name,
+        job: request,
+        event: { kind: "chat", summary: "Off-list follow-up", detail: request },
+      }).catch(() => null);
       return {
         ok: true,
         leadId: lead.id,

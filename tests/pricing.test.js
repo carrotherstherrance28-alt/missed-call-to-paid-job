@@ -35,7 +35,7 @@ test("price list edits keep money to cents and force the demo disclaimer", () =>
   });
   assert.equal(saved.business.depositPercent, 40);
   assert.equal(saved.business.demo, true);
-  assert.match(saved.business.disclaimer, /Not a real business/);
+  assert.match(saved.business.disclaimer, /Thurr Solutions/);
   assert.equal(saved.items[0].price, 200);
   const quote = computeQuote(saved, [{ itemId: "gate-repair", quantity: 1 }]);
   assert.equal(quote.depositAmount, 80);

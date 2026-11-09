@@ -11,6 +11,21 @@ const form = document.querySelector("#composer");
 const messageEl = document.querySelector("#message");
 const stepsEl = document.querySelector("#steps");
 
+let language = localStorage.getItem("lou-lang") === "es" ? "es" : "en";
+const langBtn = document.querySelector("#lang-toggle");
+
+function paintLang() {
+  if (!langBtn) return;
+  langBtn.textContent = language === "es" ? "English" : "Español";
+  messageEl.placeholder = language === "es" ? "Dile a Lou qué necesitas" : "Tell Lou what you need welded";
+}
+
+langBtn?.addEventListener("click", () => {
+  language = language === "es" ? "en" : "es";
+  localStorage.setItem("lou-lang", language);
+  paintLang();
+});
+paintLang();
 let conversationId = new URLSearchParams(location.search).get("c") || localStorage.getItem("lou-conversation-id");
 let busy = false;
 let pollTimer = 0;
@@ -102,7 +117,7 @@ async function send(text) {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ conversationId, message }),
+      body: JSON.stringify({ conversationId, message, language }),
     });
     const data = await res.json();
     pending.remove();

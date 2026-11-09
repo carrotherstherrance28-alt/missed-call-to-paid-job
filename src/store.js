@@ -16,6 +16,8 @@ function emptyState() {
     mockOrders: {},
     leads: [],
     activities: [],
+    customers: [],
+    calls: {},
   };
 }
 
@@ -35,6 +37,8 @@ function readState(filePath) {
     mockOrders: parsed.mockOrders && typeof parsed.mockOrders === "object" ? parsed.mockOrders : {},
     leads: Array.isArray(parsed.leads) ? parsed.leads : [],
     activities: Array.isArray(parsed.activities) ? parsed.activities : [],
+    customers: Array.isArray(parsed.customers) ? parsed.customers : [],
+    calls: parsed.calls && typeof parsed.calls === "object" ? parsed.calls : {},
   };
 }
 

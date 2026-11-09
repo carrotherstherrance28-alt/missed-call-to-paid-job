@@ -177,7 +177,18 @@ function paymentSummary(created, contact) {
   ].join("\n\n");
 }
 
-export function mockComplete(messages) {
+function toSpanish(text) {
+  return String(text)
+    .replaceAll("I won't change the price.", "No cambio el precio.")
+    .replaceAll("That one needs the owner to look at it.", "Eso lo tiene que ver el dueño.")
+    .replaceAll("I won't invent a price.", "No invento un precio.")
+    .replaceAll("I did not quote a price.", "No di un precio.")
+    .replaceAll("Deposit due:", "El depósito es:")
+    .replaceAll("Which time should I request?", "¿Qué horario pido?");
+}
+
+export function mockComplete(messages, { language = "en" } = {}) {
+  const voice = (text) => say(language === "es" ? toSpanish(text) : text);
   const texts = userTexts(messages);
   const all = texts.join("\n");
   const latest = texts.at(-1) || "";
@@ -185,20 +196,20 @@ export function mockComplete(messages) {
 
   const existing = latestTool(messages, "create_job_and_deposit");
   if (existing?.ok && isPriceChallenge(latest)) {
-    return say(`I won't change that deposit. It stays ${formatUSD(existing.depositAmount)} because the server prices it from the list.`);
+    return voice(`I won't change that deposit. It stays ${formatUSD(existing.depositAmount)} because the server prices it from the list.`);
   }
-  if (existing?.ok) return say(paymentSummary(existing, contact));
+  if (existing?.ok) return voice(paymentSummary(existing, contact));
 
   if (!calledThisTurn(messages, "get_price_list")) return toolCall("get_price_list", {});
   const price = latestTool(messages, "get_price_list");
-  if (!price?.ok) return say("I couldn't read the price list, so I won't guess a number.");
+  if (!price?.ok) return voice("I couldn't read the price list, so I won't guess a number.");
 
   const match = matchLineItems(all, price.items || []);
   if (match.kind === "none") {
     const names = (price.items || []).map((item) => item.name).join(", ");
     const saved = latestTool(messages, "save_followup");
     if (saved?.ok) {
-      return say(`That one needs the owner to look at it. I saved ${saved.customerName}'s number and he'll follow up. I did not quote a price.`);
+      return voice(`That one needs the owner to look at it. I saved ${saved.customerName}'s number and he'll follow up. I did not quote a price.`);
     }
     if (contact.name && contact.phone && !calledThisTurn(messages, "save_followup")) {
       return toolCall("save_followup", {
@@ -207,12 +218,12 @@ export function mockComplete(messages) {
         request: texts[0].slice(0, 180),
       });
     }
-    return say(
+    return voice(
       `That one needs the owner to look at it. Leave your name and number and he'll follow up. I can quote: ${names}. I won't invent a price.`,
     );
   }
   if (match.kind === "many") {
-    return say(`That could be more than one price-list item (${match.names.join(" and ")}). Tell me which one to quote. I won't bundle them into a made-up price.`);
+    return voice(`That could be more than one price-list item (${match.names.join(" and ")}). Tell me which one to quote. I won't bundle them into a made-up price.`);
   }
 
   if (isPriceChallenge(latest)) {
@@ -220,7 +231,7 @@ export function mockComplete(messages) {
       { business: { depositPercent: price.depositPercent }, items: price.items },
       [{ itemId: match.item.id, quantity: match.quantity }],
     );
-    return say(
+    return voice(
       `I won't change the price. ${match.item.name} stays ${formatUSD(match.item.price)} on the list, and the deposit stays ${formatUSD(quote.depositAmount)}. A $1 price is not on the list.`,
     );
   }
@@ -231,7 +242,7 @@ export function mockComplete(messages) {
       [{ itemId: match.item.id, quantity: match.quantity }],
     );
     const unit = match.quantity === 1 ? match.item.unit : `${match.item.unit}s`;
-    return say(
+    return voice(
       [
         `${match.item.name} is ${formatUSD(match.item.price)} per ${match.item.unit} on the shop price list. For ${match.quantity} ${unit}, the job total is ${formatUSD(quote.subtotal)}.`,
         `The PayPal deposit is ${quote.depositPercent}%, ${formatUSD(quote.depositAmount)}. I won't add any price that isn't on that list.`,
@@ -242,9 +253,9 @@ export function mockComplete(messages) {
 
   if (!calledThisTurn(messages, "list_open_slots")) return toolCall("list_open_slots", {});
   const slotsResult = latestTool(messages, "list_open_slots");
-  if (!slotsResult?.ok) return say("I couldn't load request times. I did not book anything.");
+  if (!slotsResult?.ok) return voice("I couldn't load request times. I did not book anything.");
   const slots = slotsResult.slots || [];
-  if (!slots.length) return say("The request board is full for the days I can offer. I didn't create a payment.");
+  if (!slots.length) return voice("The request board is full for the days I can offer. I didn't create a payment.");
 
   const slot = matchSlot(latest, slots);
   if (!slot) {
@@ -253,7 +264,7 @@ export function mockComplete(messages) {
       [{ itemId: match.item.id, quantity: match.quantity }],
     );
     const lines = slots.slice(0, 4).map((entry, index) => `${index + 1}. ${entry.label}`).join("\n");
-    return say(
+    return voice(
       [
         `Deposit would be ${formatUSD(quote.depositAmount)} (${quote.depositPercent}% of ${formatUSD(quote.subtotal)}), calculated from the price list.`,
         "Which time should I request? These are saved preferences, not a live calendar.",
@@ -276,7 +287,7 @@ export function mockComplete(messages) {
 
   const created = latestTool(messages, "create_job_and_deposit");
   if (!created?.ok) {
-    return say(`I didn't create the payment. ${created?.error || "The shop could not save that request."} Want to try a different time?`);
+    return voice(`I didn't create the payment. ${created?.error || "The shop could not save that request."} Want to try a different time?`);
   }
-  return say(paymentSummary(created, contact));
+  return voice(paymentSummary(created, contact));
 }

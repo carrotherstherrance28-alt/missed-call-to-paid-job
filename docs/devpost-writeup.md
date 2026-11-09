@@ -25,11 +25,11 @@ flowchart LR
 
 The model picks the job. The server sets the price and calls PayPal. A tool call that passes `price: 1` still creates the **$87.50** deposit on the **$175** gate repair, because the server ignores that number and reads the list. `npm test` includes `the server prices the deposit from the list when the model tries to pass price: 1` and `the PayPal agent toolkit create_order call is priced by the server`.
 
-Gateway Mobile Welding is a made-up shop. The chat uses a fake customer, Sam Rivera. No real client data is in this repo.
+Gateway Mobile Welding is not the name on this demo. The business name is Thurr Solutions. The chat uses a fake customer, Sam Rivera. No real client data is in this repo.
 
 ## What it does
 
-Lou replies to the customer, quotes only from the owner's price list, and hands over a PayPal deposit link. The owner's board shows when it's paid.
+Lou replies to the customer in chat, and on the phone when Twilio is configured. Lou quotes only from the owner's price list in chat, and only from `config/quote-ranges.json` on a call. Lou hands over a PayPal deposit link. The owner's board shows one lead per phone number and when the deposit is paid.
 
 Lou creates a PayPal Orders v2 sandbox order for the deposit. On the sandbox host, that create, the later get, and the capture go through `@paypal/agent-toolkit` (`create_order`, `get_order`, `pay_order`). The model does not get those tools. The amount is the list deposit. For the default gate repair that is 50% of $175, so **$87.50**.
 
@@ -57,9 +57,9 @@ PayPal is Orders v2 on `api-m.sandbox.paypal.com`, called through the PayPal Age
 
 ## Built vs not built yet
 
-Built: the web chat, quotes from the editable price list, the $1 price refusal, owner follow-ups with no price, requested times stored here, the PayPal sandbox deposit, the activity panel, and the shop board.
+Built: the web chat, the phone script, the missed-call text, one lead per caller, quotes from the price list and the spoken range card, the $1 price refusal, requested times stored here, the PayPal sandbox deposit, and the shop board.
 
-Not built: texting, phone answering, and calendar booking.
+Not built: a confirmed calendar booking. Live calls and SMS need `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER`. Without them, the shop board simulates the call and the text, and no SMS is sent. PayPal stays on the sandbox.
 
 ## How to test it
 
