@@ -392,7 +392,7 @@ test("the OpenAI-compatible client sends tools and posts tool results back", asy
       llm: {
         baseUrl: `http://127.0.0.1:${server.address().port}`,
         apiKey: "super-secret-key",
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash",
       },
     };
     const result = await runAgentTurn({
@@ -408,7 +408,7 @@ test("the OpenAI-compatible client sends tools and posts tool results back", asy
     });
     assert.match(result.visible[0].content, /\$175/);
     assert.equal(seen[0].authorization, "Bearer super-secret-key");
-    assert.equal(seen[0].body.model, "gemini-2.5-flash");
+    assert.equal(seen[0].body.model, "gemini-3.5-flash");
     assert.equal(seen[0].body.tools[0].function.name, "get_price_list");
     assert.equal(seen[0].body.messages[0].role, "system");
     assert.equal(seen[1].body.messages.at(-1).role, "tool");

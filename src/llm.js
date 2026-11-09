@@ -100,7 +100,7 @@ export async function liveComplete({ config, messages, tools, fetchImpl = fetch 
         Accept: "application/json",
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(60000),
     });
   }
 

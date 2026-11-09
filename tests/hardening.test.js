@@ -15,7 +15,7 @@ test("public return URLs prefer PUBLIC_BASE_URL, then Render's external URL", ()
   const fromRender = loadConfig({ RENDER_EXTERNAL_URL: "https://lou-receptionist.onrender.com/" });
   assert.equal(fromRender.publicBaseUrl, "https://lou-receptionist.onrender.com");
   assert.equal(fromRender.llm.baseUrl, "https://generativelanguage.googleapis.com/v1beta/openai");
-  assert.equal(fromRender.llm.model, "gemini-2.5-flash");
+  assert.equal(fromRender.llm.model, "gemini-3.5-flash");
   const req = {
     protocol: "http",
     get(name) {
@@ -158,7 +158,7 @@ test("Gemini requests drop additionalProperties and keep thought signatures", as
           llm: {
             baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
             apiKey: "gemini-key",
-            model: "gemini-2.5-flash",
+            model: "gemini-3.5-flash",
           },
         },
         messages,
@@ -167,7 +167,7 @@ test("Gemini requests drop additionalProperties and keep thought signatures", as
       }),
       toolHandlers: { async get_price_list() { return { ok: true, items: [] }; } },
     });
-    assert.equal(seen[0].model, "gemini-2.5-flash");
+    assert.equal(seen[0].model, "gemini-3.5-flash");
     assert.equal(seen[0].tool_choice, undefined);
     assert.equal(seen[0].tools[0].function.parameters.additionalProperties, undefined);
     const assistant = seen[1].messages.find((message) => message.role === "assistant" && message.tool_calls);
@@ -195,7 +195,7 @@ test("a 429 from the model is retried once, then explained", async () => {
   try {
     await assert.rejects(
       () => liveComplete({
-        config: { llm: { baseUrl: base, apiKey: "k", model: "gemini-2.5-flash" } },
+        config: { llm: { baseUrl: base, apiKey: "k", model: "gemini-3.5-flash" } },
         messages: [{ role: "user", content: "hi" }],
         tools: toolDefinitions,
       }),

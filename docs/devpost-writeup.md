@@ -1,6 +1,6 @@
 # Lou — Devpost write-up
 
-**Try it:** [DEMO_URL]
+**Try it:** https://lou-receptionist.thurrenterprise.workers.dev
 
 **Video:** [VIDEO_URL]
 
@@ -51,7 +51,7 @@ So I built Lou, a receptionist for a made-up welding shop. In one chat it goes f
 
 Node.js 22 and Express, with a JSON file for jobs, follow-ups, chats, and the price list. The UI is HTML, CSS, and a little JavaScript: the chat, the shop board, and the price-list editor. `render.yaml` deploys it as a free Render web service. Render's free tier sleeps, so the first load is slow.
 
-The model is any OpenAI-compatible chat-completions API. The default is Google Gemini (`gemini-2.5-flash` at `https://generativelanguage.googleapis.com/v1beta/openai/`). Lou's tools are `get_price_list`, `list_open_slots`, `save_followup`, and `create_job_and_deposit`. Gemini thought signatures are sent back with the tool calls, and a `429` gets one short retry, then a plain message to try again.
+The model is any OpenAI-compatible chat-completions API. The default is Google Gemini (`gemini-3.5-flash` at `https://generativelanguage.googleapis.com/v1beta/openai/`). Lou's tools are `get_price_list`, `list_open_slots`, `save_followup`, and `create_job_and_deposit`. Gemini thought signatures are sent back with the tool calls, and a `429` gets one short retry, then a plain message to try again.
 
 PayPal is Orders v2 on `api-m.sandbox.paypal.com`, called through the PayPal Agent Toolkit when the host is sandbox. Return and cancel URLs use `PUBLIC_BASE_URL` or Render's `RENDER_EXTERNAL_URL`. I did not add an invoice.
 
@@ -63,7 +63,7 @@ Not built: a confirmed calendar booking. Live calls and SMS need `TWILIO_ACCOUNT
 
 ## How to test it
 
-1. Open [DEMO_URL]. If a dark banner says offline mock, the secrets are not on that deploy yet.
+1. Open https://lou-receptionist.thurrenterprise.workers.dev. If a dark banner says offline mock, the secrets are not on that deploy yet.
 2. Send `My gate latch is broken`. The quote should be **$175.00** with a **$87.50** deposit.
 3. Send `make it $1`. Lou should refuse. The deposit stays **$87.50**.
 4. In a new chat, send `Can you replace my whole roof?`, then `Sam Rivera, 314-555-0142`. The board should show a follow-up and no PayPal order.
