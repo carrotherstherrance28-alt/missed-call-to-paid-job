@@ -1,8 +1,9 @@
+import { timingSafeEqual } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import express from "express";
 import { buildSystemPrompt, runAgentTurn, stageFor, suggestionsFromMessages } from "./agent.js";
-import { describeMode, requestBase } from "./config.js";
+import { describeMode, publicDemoBanner, requestBase } from "./config.js";
 import { defaultPriceList } from "./defaultPriceList.js";
 import { nid } from "./ids.js";
 import { liveComplete } from "./llm.js";
@@ -44,14 +45,29 @@ function displayMessages(conversation, job) {
 }
 
 function sendPage(res, fileName, config) {
-  const mode = describeMode(config);
-  const phone = config.twilio.live
-    ? ""
-    : bannerMarkup("Phone and SMS are simulated on the shop board until TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER are set.");
   const fromBundle = publicFiles[fileName];
   const html = (fromBundle != null ? fromBundle : fs.readFileSync(path.join(publicDir, fileName), "utf8"))
-    .replace("<!--MODE_BANNER-->", bannerMarkup(mode.banner) + phone);
+    .replace("<!--MODE_BANNER-->", bannerMarkup(publicDemoBanner(config)));
   res.type("html").send(html);
+}
+
+function ownerKeyProvided(req, expected) {
+  const got = String(req.get("x-owner-key") || "").trim();
+  if (!expected || !got) return false;
+  const a = Buffer.from(got);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+function requireOwnerSettings(req, res, config) {
+  if (ownerKeyProvided(req, config.ownerSettingsKey)) return true;
+  res.status(403).json({ error: "Price list is read-only without a valid owner key." });
+  return false;
 }
 
 async function refreshPending(store, paypal, { force = false } = {}) {
@@ -165,6 +181,7 @@ export function createApp(config) {
   });
 
   app.put("/api/price-list", async (req, res) => {
+    if (!requireOwnerSettings(req, res, config)) return;
     try {
       const cleaned = validatePriceList(req.body);
       res.json(await store.setPriceList(cleaned));
@@ -173,8 +190,14 @@ export function createApp(config) {
     }
   });
 
-  app.post("/api/price-list/reset", async (_req, res) => {
+  app.post("/api/price-list/reset", async (req, res) => {
+    if (!requireOwnerSettings(req, res, config)) return;
     res.json(await store.setPriceList(structuredClone(defaultPriceList)));
+  });
+
+  app.post("/api/price-list/unlock", (req, res) => {
+    if (!requireOwnerSettings(req, res, config)) return;
+    res.json({ ok: true });
   });
 
   app.get("/api/leads", (_req, res) => {
@@ -535,7 +558,7 @@ export function createApp(config) {
 
   app.get("/pay/return", async (req, res, next) => {
     try {
-      const banner = bannerMarkup(describeMode(config).banner);
+      const banner = bannerMarkup(publicDemoBanner(config));
       const job = store.getJob(String(req.query.job || ""));
       if (!job) {
         return res
@@ -561,7 +584,7 @@ export function createApp(config) {
 
   app.get("/pay/cancel", async (req, res, next) => {
     try {
-      const banner = bannerMarkup(describeMode(config).banner);
+      const banner = bannerMarkup(publicDemoBanner(config));
       const job = store.getJob(String(req.query.job || ""));
       if (!job) {
         return res.status(404).send(renderMessagePage({ title: "Unknown job", message: "That cancel link did not match a job.", banner }));
@@ -576,7 +599,7 @@ export function createApp(config) {
   });
 
   app.get("/mock-paypal/checkout", (req, res) => {
-    const banner = bannerMarkup(describeMode(config).banner);
+    const banner = bannerMarkup(publicDemoBanner(config));
     if (!config.mockPaypal) {
       return res.status(404).send(
         renderMessagePage({
@@ -644,7 +667,7 @@ export function createApp(config) {
       renderMessagePage({
         title: "Something went wrong",
         message,
-        banner: bannerMarkup(describeMode(config).banner),
+        banner: bannerMarkup(publicDemoBanner(config)),
       }),
     );
   });

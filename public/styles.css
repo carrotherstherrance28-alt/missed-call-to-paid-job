@@ -381,3 +381,25 @@ input[type="text"], input[type="number"], input[type="email"] {
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; }
 }
+
+#price-form.is-readonly input:disabled {
+  opacity: 1;
+  color: inherit;
+  background: #f4f1ea;
+  cursor: default;
+}
+#price-form.is-readonly .row-actions #add-item,
+#price-form.is-readonly .row-actions button[type="submit"],
+#price-form.is-readonly .row-actions #reset {
+  display: none;
+}
+.owner-unlock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+  margin: 0 0 8px;
+}
+.owner-unlock label { flex: 1 1 220px; margin: 0; }
+.owner-unlock .button { width: auto; }
+#readonly-note { margin: 0 0 16px; }

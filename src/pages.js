@@ -34,7 +34,7 @@ function shell({ title, body, banner = "" }) {
   ${banner}
   <main class="wrap narrow">${body}</main>
   <footer class="site-foot">
-    <p>Thurr Solutions demo. Lou answers a Twilio call and texts a link when those env vars are set. Otherwise the shop board simulates the call. Payments stay on the PayPal sandbox, or the offline mock when PayPal keys are missing. A requested time is not a confirmed booking.</p>
+    <p>Thurr Solutions demo. Payments stay on the PayPal sandbox, or the offline mock when PayPal is simulated. The phone is simulated. Lou does not book or send texts. A requested time is not a confirmed booking.</p>
     <p>MIT License · Therrance Carrothers · Thurr Solutions LLC · St. Louis</p>
   </footer>
 </body>

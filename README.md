@@ -4,7 +4,7 @@ https://lou-receptionist.thurrenterprise.workers.dev
 
 From “my gate latch is broken” to a PayPal deposit in one chat.
 
-Lou replies in a web chat for **Thurr Solutions** in St. Louis. The model picks the job. The server sets the price from the owner's list and creates the PayPal sandbox order, so the agent cannot make up a price. When Twilio is configured, Lou also answers the phone and texts a link back. Without those env vars, the shop board simulates the call and the text.
+Lou replies in a web chat for **Thurr Solutions** in St. Louis. The model picks the job. The server sets the price from the owner's list and creates the PayPal sandbox order, so the agent cannot make up a price. When Twilio is configured, Lou also answers the phone and texts a link back. Without Twilio configured, the shop board simulates the call and the text.
 
 The shop board shows the quote, the requested time, and whether the deposit is pending or paid.
 
@@ -208,6 +208,7 @@ To receive webhooks, register `https://YOUR_SERVICE/api/paypal/webhook` on the s
 | `TWILIO_AUTH_TOKEN` | Used to send SMS and to check `X-Twilio-Signature`. Secret. |
 | `TWILIO_PHONE_NUMBER` | The Twilio number that answers and texts. Lou does not buy numbers. |
 | `OWNER_WEBHOOK_URL` | Optional. Lou POSTs the owner summary here. |
+| `OWNER_SETTINGS_KEY` | Optional. Required to save or reset the public price list. Leave blank and `/settings` stays read-only. Send it as the `X-Owner-Key` header. Secret. Do not commit a real value. |
 | `SEED_DEMO` | Default on. Set `false` to skip the seeded shop, price list, and sample jobs. |
 | `PAYPAL_ALLOW_LIVE` | Leave unset. |
 | `CHAT_RATE_LIMIT_MAX` | Default `30` chat posts per window per IP. |
