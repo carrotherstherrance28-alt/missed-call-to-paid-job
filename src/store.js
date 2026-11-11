@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { defaultPriceList } from "./defaultPriceList.js";
 
+const DEFAULT_KV_KEY = "lou.json";
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -21,12 +23,9 @@ function emptyState() {
   };
 }
 
-function readState(filePath) {
-  if (!fs.existsSync(filePath)) return emptyState();
-  const raw = fs.readFileSync(filePath, "utf8");
-  const parsed = JSON.parse(raw);
+function normalizeState(parsed, label = "store") {
   if (!parsed || typeof parsed !== "object" || !parsed.priceList) {
-    throw new Error(`Data file ${filePath} is missing a price list.`);
+    throw new Error(`Data file ${label} is missing a price list.`);
   }
   return {
     version: 1,
@@ -42,12 +41,48 @@ function readState(filePath) {
   };
 }
 
+function readState(filePath) {
+  if (!fs.existsSync(filePath)) return emptyState();
+  const raw = fs.readFileSync(filePath, "utf8");
+  return normalizeState(JSON.parse(raw), filePath);
+}
+
+function isKvOptions(target) {
+  return Boolean(target && typeof target === "object" && target.kv);
+}
+
 export function createStore(filePath) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  let state = readState(filePath);
+  const kv = isKvOptions(filePath) ? filePath.kv : null;
+  const kvKey = kv ? filePath.key || DEFAULT_KV_KEY : null;
+  const resolvedPath = kv ? kvKey : filePath;
+
+  if (!kv) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  }
+
+  let state = kv ? emptyState() : readState(filePath);
   let chain = Promise.resolve();
 
-  function persist(next) {
+  async function hydrate() {
+    if (kv) {
+      const raw = await kv.get(kvKey);
+      if (!raw) {
+        state = emptyState();
+        return state;
+      }
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      state = normalizeState(parsed, kvKey);
+      return state;
+    }
+    state = readState(filePath);
+    return state;
+  }
+
+  async function persist(next) {
+    if (kv) {
+      await kv.put(kvKey, JSON.stringify(next));
+      return;
+    }
     const tmp = `${filePath}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(next, null, 2));
     fs.renameSync(tmp, filePath);
@@ -55,9 +90,10 @@ export function createStore(filePath) {
 
   function change(mutator) {
     const run = chain.then(async () => {
+      await hydrate();
       const draft = structuredClone(state);
       const result = await mutator(draft);
-      persist(draft);
+      await persist(draft);
       state = draft;
       return result;
     });
@@ -73,7 +109,9 @@ export function createStore(filePath) {
   }
 
   return {
-    filePath,
+    filePath: resolvedPath,
+    kv: Boolean(kv),
+    hydrate,
     read,
     change,
     getPriceList() {

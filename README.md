@@ -131,7 +131,7 @@ The demo works without a webhook. `/pay/return` captures the order. **Refresh pa
 
 Lou calls `POST {LLM_BASE_URL}/chat/completions` with tools. The default base URL is `https://generativelanguage.googleapis.com/v1beta/openai/` and the default model is `gemini-3.5-flash`.
 
-For that Gemini host, Lou omits `tool_choice`, strips `additionalProperties` from tool schemas, and sends back each tool call's `extra_content` (the thought signature) on the next request. A `429` waits once, using `Retry-After` when it is short, then tells the customer to send the message again.
+For that Gemini host, Lou omits `tool_choice`, strips `additionalProperties` from tool schemas, and sends back each tool call's `extra_content` (the thought signature) on the next request. A `429`, `502`, or `503` from the model is retried up to twice with exponential backoff (1s, then 2s, capped at 8s), honoring a short `Retry-After` when the provider sends one. If every attempt fails, Lou tells the customer to send the message again. There is no cheaper fallback model configured; the only model is `gemini-3.5-flash`.
 
 Each turn runs tool calls (up to 8 rounds) and shows the final assistant text.
 
@@ -196,7 +196,7 @@ To receive webhooks, register `https://YOUR_SERVICE/api/paypal/webhook` on the s
 | `MOCK_MODE` | `true` simulates LLM and PayPal. `false` simulates nothing. Unset simulates a side only when its key is missing. |
 | `PORT` | HTTP port. Render sets this. Default `3000`. |
 | `PUBLIC_BASE_URL` | Origin for PayPal return and cancel URLs. Falls back to `RENDER_EXTERNAL_URL`, then the request host. |
-| `DATA_FILE` | JSON store path. Default `./data/lou.json`. |
+| `DATA_FILE` | JSON store path for local/Node runs. Default `./data/lou.json`. On Cloudflare Workers, `createStore` uses the `LOU_KV` binding instead of `/tmp/lou.json`, so chats and jobs survive across isolates. Preview and production each have their own KV namespace. |
 | `LLM_BASE_URL` | OpenAI-compatible origin. Default `https://generativelanguage.googleapis.com/v1beta/openai/`. |
 | `LLM_API_KEY` | Bearer token. Secret. |
 | `LLM_MODEL` | Default `gemini-3.5-flash`. |

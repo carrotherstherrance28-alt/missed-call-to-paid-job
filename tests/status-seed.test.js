@@ -75,7 +75,7 @@ test("the chat shows a busy retry message when the model returns 429", async () 
         const reply = await chat(base, null, "My gate latch is broken");
         assert.equal(reply.status, 429);
         assert.match(reply.body.error, /busy, please retry/);
-        assert.equal(hits, 2);
+        assert.equal(hits, 3);
       },
     );
   } finally {

@@ -11,12 +11,18 @@ workers_dev = true
 [vars]
 MOCK_MODE = "false"
 SEED_DEMO = "true"
+# DATA_FILE is unused on Workers when LOU_KV is bound. Kept for local Node runs via .env.
 DATA_FILE = "/tmp/lou.json"
 LLM_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 LLM_MODEL = "gemini-3.5-flash"
 PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com"
 PAYPAL_CLIENT_ID = "AS3g5d5XK4A0-FMYUVpU_-_M_mDJpHHP9vTG6AcWMPf2u0-a0QSd0vbNDtnvL-_tL8BWr5va91Xgn4uP"
 PUBLIC_BASE_URL = "https://lou-receptionist.thurrenterprise.workers.dev"
+
+# Production store. Separate from lou-receptionist-preview-store. Do not bind the preview id here.
+[[kv_namespaces]]
+binding = "LOU_KV"
+id = "2cd8f54fe5854206811cd4c19de5bea0"
 
 # Ship HTML/CSS/JS assets for Express sendPage/readFileSync.
 [[rules]]
