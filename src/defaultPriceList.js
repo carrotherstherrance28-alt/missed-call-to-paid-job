@@ -8,7 +8,7 @@ export const defaultPriceList = {
     depositPercent: 50,
     demo: true,
     disclaimer:
-      "Demo for Thurr Solutions. PayPal stays on the sandbox. Phone and SMS run through Twilio only when those env vars are set; otherwise the shop board simulates them.",
+      "Demo for Thurr Solutions. PayPal stays on the sandbox. The phone is simulated. Lou does not book or send texts.",
   },
   items: [
     {

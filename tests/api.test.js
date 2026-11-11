@@ -24,7 +24,7 @@ test("mock chat quotes the list, creates one deposit, and marks it paid on retur
   await withServer({}, async (base) => {
     const home = await fetch(base);
     const html = await home.text();
-    assert.match(html, /Offline mock mode/);
+    assert.match(html, /Demo: PayPal simulated, phone simulated/);
     assert.match(html, /Thurr Solutions/);
     assert.match(html, /PayPal sandbox/);
     assert.match(html, /not a calendar sync/);
@@ -98,7 +98,7 @@ test("dashboard refresh captures an approved mock order", async () => {
 });
 
 test("railing quantity and a price-list edit change the deposit", async () => {
-  await withServer({}, async (base) => {
+  await withServer({ OWNER_SETTINGS_KEY: "test-owner-key" }, async (base) => {
     const { third } = await book(base, "I need 2 sections of steel railing");
     assert.equal(third.body.job.subtotal, 760);
     assert.equal(third.body.job.depositAmount, 380);
@@ -108,7 +108,7 @@ test("railing quantity and a price-list edit change the deposit", async () => {
     current.items = current.items.map((item) => (item.id === "gate-repair" ? { ...item, price: 200 } : item));
     const saved = await fetch(`${base}/api/price-list`, {
       method: "PUT",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "x-owner-key": "test-owner-key" },
       body: JSON.stringify(current),
     });
     assert.equal(saved.status, 200);

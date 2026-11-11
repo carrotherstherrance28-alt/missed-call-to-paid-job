@@ -70,6 +70,7 @@ export function loadConfig(env = process.env) {
     },
     ownerWebhookUrl: String(env.OWNER_WEBHOOK_URL || "").trim(),
     ownerEmail: String(env.OWNER_EMAIL || "").trim(),
+    ownerSettingsKey: String(env.OWNER_SETTINGS_KEY || "").trim(),
     seedDemo: env.SEED_DEMO !== "false",
   };
 }
@@ -155,4 +156,14 @@ export function assertPublicReturnBase(baseUrl) {
     throw new Error("PayPal return URLs on a public host must be https. Set PUBLIC_BASE_URL to the Render https URL.");
   }
   return url.origin;
+}
+
+export function publicDemoBanner(config) {
+  const mode = describeMode(config);
+  if (mode.kind === "blocked") {
+    return "Live mode is on, so nothing is simulated, but a required secret is missing. Lou will not invent a PayPal payment or a model reply until those are added.";
+  }
+  const paypal = config.mockPaypal ? "PayPal simulated" : "PayPal sandbox";
+  const phone = config.twilio.live ? "phone connected" : "phone simulated";
+  return `Demo: ${paypal}, ${phone}`;
 }
