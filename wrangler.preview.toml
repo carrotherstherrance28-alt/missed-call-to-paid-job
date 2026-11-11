@@ -11,12 +11,18 @@ preview_urls = true
 "iconv-lite" = "./worker/stubs/iconv-lite.js"
 
 [vars]
-MOCK_MODE = "true"
+MOCK_MODE = "false"
 SEED_DEMO = "true"
-DATA_FILE = "/tmp/lou.json"
 LLM_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
 LLM_MODEL = "gemini-3.5-flash"
 PAYPAL_API_BASE = "https://api-m.sandbox.paypal.com"
+PAYPAL_CLIENT_ID = "AS3g5d5XK4A0-FMYUVpU_-_M_mDJpHHP9vTG6AcWMPf2u0-a0QSd0vbNDtnvL-_tL8BWr5va91Xgn4uP"
+PUBLIC_BASE_URL = "https://lou-receptionist-preview.thurrenterprise.workers.dev"
+
+# Preview store only. Do not reuse the production lou-receptionist-store id.
+[[kv_namespaces]]
+binding = "LOU_KV"
+id = "6d677afd53b749ddbb48b7102e9601c1"
 
 [[rules]]
 type = "Text"

@@ -93,8 +93,8 @@ export function createChatLimiter() {
   };
 }
 
-export function createApp(config) {
-  const store = createStore(config.dataFile);
+export function createApp(config, options = {}) {
+  const store = options.store || createStore(config.dataFile);
   const seeded = config.seedDemo === false ? Promise.resolve() : seedDemo(store);
   const allowChat = createChatLimiter();
   const onActivity = (entry) => store.addActivity({ id: nid("act"), at: new Date().toISOString(), ...entry });
@@ -151,7 +151,11 @@ export function createApp(config) {
     }
   });
   app.use((req, res, next) => {
-    seeded.then(() => next()).catch(next);
+    Promise.resolve()
+      .then(() => store.hydrate())
+      .then(() => seeded)
+      .then(() => next())
+      .catch(next);
   });
 
   app.get("/api/health", (_req, res) => {

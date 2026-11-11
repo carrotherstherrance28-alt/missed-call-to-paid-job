@@ -10,13 +10,28 @@ export function isGeminiBase(baseUrl) {
   }
 }
 
+const MAX_COMPLETE_ATTEMPTS = 3;
+const MAX_RETRY_DELAY_MS = 8000;
+
 function retryDelayMs(header) {
   if (!header) return 1200;
   const seconds = Number(header);
-  if (Number.isFinite(seconds)) return Math.min(Math.max(seconds, 0) * 1000, 4000);
+  if (Number.isFinite(seconds)) return Math.min(Math.max(seconds, 0) * 1000, MAX_RETRY_DELAY_MS);
   const when = Date.parse(header);
-  if (Number.isFinite(when)) return Math.min(Math.max(when - Date.now(), 0), 4000);
+  if (Number.isFinite(when)) return Math.min(Math.max(when - Date.now(), 0), MAX_RETRY_DELAY_MS);
   return 1200;
+}
+
+function waitBeforeRetry(header, attempt) {
+  const fromHeader = header == null || header === "" ? null : retryDelayMs(header);
+  if (fromHeader === 0) return 0;
+  const backoff = 1000 * 2 ** (attempt - 1);
+  if (fromHeader != null) return Math.min(Math.max(fromHeader, backoff), MAX_RETRY_DELAY_MS);
+  return Math.min(backoff, MAX_RETRY_DELAY_MS);
+}
+
+function isRetryableStatus(status) {
+  return status === 429 || status === 502 || status === 503;
 }
 
 function textContent(content) {
@@ -105,19 +120,25 @@ export async function liveComplete({ config, messages, tools, fetchImpl = fetch 
   }
 
   let res;
-  try {
-    res = await send();
-    if (res.status === 429) {
-      const wait = retryDelayMs(res.headers.get("retry-after"));
-      await res.text().catch(() => "");
-      await delay(wait);
+  for (let attempt = 1; attempt <= MAX_COMPLETE_ATTEMPTS; attempt += 1) {
+    try {
       res = await send();
+    } catch (err) {
+      if (attempt === MAX_COMPLETE_ATTEMPTS) {
+        const error = new Error("Lou is busy, please retry.");
+        error.status = 502;
+        error.cause = err;
+        throw error;
+      }
+      await delay(waitBeforeRetry(null, attempt));
+      continue;
     }
-  } catch (err) {
-    const error = new Error("Lou is busy, please retry.");
-    error.status = 502;
-    error.cause = err;
-    throw error;
+    if (res.ok || !isRetryableStatus(res.status) || attempt === MAX_COMPLETE_ATTEMPTS) {
+      break;
+    }
+    const wait = waitBeforeRetry(res.headers.get("retry-after"), attempt);
+    await res.text().catch(() => "");
+    await delay(wait);
   }
 
   const text = await res.text();

@@ -177,7 +177,32 @@ test("Gemini requests drop additionalProperties and keep thought signatures", as
   }
 });
 
-test("a 429 from the model is retried once, then explained", async () => {
+test("a 429 from the model is retried with backoff, then explained", async () => {
+  let hits = 0;
+  const server = http.createServer((_req, res) => {
+    hits += 1;
+    res.writeHead(429, { "retry-after": "0", "content-type": "application/json" });
+    res.end(JSON.stringify({ error: { message: "RESOURCE_EXHAUSTED" } }));
+  });
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
+  const base = `http://127.0.0.1:${server.address().port}`;
+  try {
+    await assert.rejects(
+      () => liveComplete({
+        config: { llm: { baseUrl: base, apiKey: "k", model: "gemini-3.5-flash" } },
+        messages: [{ role: "user", content: "hi" }],
+        tools: toolDefinitions,
+      }),
+      /busy, please retry/,
+    );
+    assert.equal(hits, 3);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("a 429 from the model succeeds after two retries", async () => {
   let hits = 0;
   const server = http.createServer((_req, res) => {
     hits += 1;
@@ -193,15 +218,13 @@ test("a 429 from the model is retried once, then explained", async () => {
   await once(server, "listening");
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
-    await assert.rejects(
-      () => liveComplete({
-        config: { llm: { baseUrl: base, apiKey: "k", model: "gemini-3.5-flash" } },
-        messages: [{ role: "user", content: "hi" }],
-        tools: toolDefinitions,
-      }),
-      /busy, please retry/,
-    );
-    assert.equal(hits, 2);
+    const message = await liveComplete({
+      config: { llm: { baseUrl: base, apiKey: "k", model: "gemini-3.5-flash" } },
+      messages: [{ role: "user", content: "hi" }],
+      tools: toolDefinitions,
+    });
+    assert.equal(hits, 3);
+    assert.equal(message.content, "ok");
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
