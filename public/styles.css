@@ -390,9 +390,11 @@ input[type="text"], input[type="number"], input[type="email"] {
 }
 #price-form.is-readonly .row-actions #add-item,
 #price-form.is-readonly .row-actions button[type="submit"],
-#price-form.is-readonly .row-actions #reset {
+#price-form.is-readonly .row-actions #reset,
+#price-form.is-readonly .item-editor .danger {
   display: none;
 }
+[hidden] { display: none !important; }
 .owner-unlock {
   display: flex;
   flex-wrap: wrap;
